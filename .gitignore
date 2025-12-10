@@ -1,1 +1,7 @@
 *.class
+.project
+.classpath
+.claude
+*.o
+*.exe
+

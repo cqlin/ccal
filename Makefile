@@ -44,6 +44,12 @@ CXXFLAGS += -O2
 
 ccal:	ccal.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lm
+testterms: testterms.o $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lm
+testday: testday.o $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lm
+testcppfmod: testcppfmod.o $(OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^ -lm
 
 install:	ccal
 	./mkinstalldirs $(BINDIR)
