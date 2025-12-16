@@ -32,4 +32,6 @@ typedef vector<double> vdouble;
 */
 void solarterm(short int year, double& jdpws, vdouble& vjdterms);
 
+double timeangle(double t);
+
 #endif /* SOLARTERM_H */

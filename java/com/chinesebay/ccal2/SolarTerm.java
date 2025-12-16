@@ -19,6 +19,7 @@ package com.chinesebay.ccal2;
 */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * SolarTerm.java
@@ -29,8 +30,9 @@ import java.util.ArrayList;
  * the ecliptic. Each term is 15 degrees apart.
  */
 public class SolarTerm {
-    private static final double PI = 3.141592653589793;
+    private static final double PI = 3.14159265358979323846;
     private static final double ERR_LIMIT = 360.0 / 365.2422 / 86400.0; // One second
+    private static final int maxIterations = 200;
 
     /**
      * Result class for solarterm calculation
@@ -49,7 +51,7 @@ public class SolarTerm {
      * Computes the angle in degrees of given UTC time,
      * with 0 being winter solstice
      */
-    private static double timeangle(double t) {
+    public static double timeangle(double t) {
         double[] sposg = new double[3];
         double[] spos = new double[3];
         double[] eposb = new double[3];
@@ -65,7 +67,9 @@ public class SolarTerm {
 
         // Get Earth position
         SolarSystem.solarsystem(tdb, (short)3, NovasConstants.HELIOC, eposh, evelh);
+        //System.out.println(String.format("eposh=%s,evelh=%s", Arrays.toString(eposh), Arrays.toString(evelh)));
         SolarSystem.solarsystem(tdb, (short)3, NovasConstants.BARYC, eposb, evelb);
+        //System.out.println(String.format("eposb=%s,evelb=%s", Arrays.toString(eposb), Arrays.toString(evelb)));
 
         // Convert to geocentric sun position
         spos[0] = -eposh[0];
@@ -77,7 +81,9 @@ public class SolarTerm {
 
         sposg = Novas.aberration(spos, evelb, lighttime);
         spos = Novas.precession(NovasConstants.T0, sposg, tdb);
+        //System.out.println(String.format("sposg=%s,spos=%s", Arrays.toString(sposg), Arrays.toString(spos)));
         sposg = Novas.nutation(tdb, NovasConstants.FN0, (short)0, spos);
+        //System.out.println(String.format("sposg=%s,spos=%s", Arrays.toString(sposg), Arrays.toString(spos)));
 
         y = Math.sqrt(sposg[1] * sposg[1] + sposg[2] * sposg[2]);
         y *= (sposg[1] > 0.0) ? 1.0 : -1.0;
@@ -125,7 +131,6 @@ public class SolarTerm {
     private static double termtime(double tstart, double tend, double termang) {
         double tl, tu, t, f;
         double v, vl, vu;
-        int maxIterations = 100;
         int iteration = 0;
 
         tl = tstart;
@@ -147,12 +152,6 @@ public class SolarTerm {
                 break;
             }
 
-            // Prevent division by zero
-            if (Math.abs(vu - vl) < 1e-10) {
-                t = (tu + tl) / 2.0;
-                break;
-            }
-
             f = (tu - tl) / (vu - vl);
             t = tl - f * vl;
             v = timeangle(t) - termang;
@@ -161,6 +160,8 @@ public class SolarTerm {
                 bv = chklowvalue(t, v, vu, termang);
                 tl = bv.tl;
                 vl = bv.vl;
+                t = tl;
+                v = vl;
             } else {
                 vu = v;
                 tu = t;

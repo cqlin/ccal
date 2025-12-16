@@ -276,3 +276,11 @@ This conversion provides a solid foundation for the Chinese Calendar application
 **Total effort**: Complete NOVAS library (2,652 lines + documentation)
 **Quality**: Production-ready
 **Status**: ✅ **COMPLETE AND FUNCTIONAL**
+
+## Problems due to Hallucinations and context limit of Claude Code
+- C fmod handling
+- missing functions in SolarSystems, only Stubs
+- missing large data table in NutationData, and missing logic in the function that use those data
+- Pass by reference handling mixed with variable assignment.
+
+

@@ -360,8 +360,6 @@ public class Novas {
     }
 
     public static void nutation_angles(double t, short accuracy, MutableDouble dpsi, MutableDouble deps) {
-        double t1;
-        t1 = t * 36525.0;
         Nutation.nutation(t, dpsi, deps);
         dpsi.value /= Novascon.ASEC2RAD;
         deps.value /= Novascon.ASEC2RAD;

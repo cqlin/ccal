@@ -1,16 +1,17 @@
 package com.chinesebay.ccal;
 
+import java.util.Arrays;
 import java.util.List;
 import static com.chinesebay.ccal.Novascon.*;
 
 public class SolarTerm {
-    public static final double PI = 3.141592653589793;
+    public static final double PI = 3.14159265358979323846;
     public static final double errlimit = 360.0 / 365.2422 / 86400.0; /* One second */
 
     /* Computes the angle in degrees of given UTC time,
        with 0 being winter solstice
     */
-    static double timeangle(double t) {
+    public static double timeangle(double t) {
         double[] sposg = new double[3];
         double[] spos = new double[3];
         double[] eposb = new double[3];
@@ -25,17 +26,19 @@ public class SolarTerm {
         Novas.tdb2tt(t, dummy, secdiff);
         tdb = t + secdiff.value / 86400.0;
         Solsys3.solarsystem(tdb, (short) 3, (short) Novas.HELIOC, eposh, evelh);
+        //System.out.println(String.format("eposh=%s,evelh=%s", Arrays.toString(eposh), Arrays.toString(evelh)));
         Solsys3.solarsystem(tdb, (short) 3, (short) Novas.BARYC, eposb, evelb);
+        //System.out.println(String.format("eposb=%s,evelb=%s", Arrays.toString(eposb), Arrays.toString(evelb)));
         /* Convert to geocentric sun position */
         spos[0] = -eposh[0];
         spos[1] = -eposh[1];
         spos[2] = -eposh[2];
         lighttime = Math.sqrt(spos[0] * spos[0] + spos[1] * spos[1] + spos[2] * spos[2]) / Novascon.C_AUDAY;
         Novas.aberration(spos, evelb, lighttime, sposg);
-        
         Novas.precession(Novascon.T0, sposg, tdb, spos);
-
+        //System.out.println(String.format("sposg=%s,spos=%s", Arrays.toString(sposg), Arrays.toString(spos)));
         Novas.nutation(tdb, Novascon.FN0, (short) 0, spos, sposg);
+        //System.out.println(String.format("sposg=%s,spos=%s", Arrays.toString(sposg), Arrays.toString(spos)));
 
         y = Math.sqrt(sposg[1] * sposg[1] + sposg[2] * sposg[2]);
         y *= (sposg[1] > 0.0) ? 1.0 : -1.0;
@@ -97,6 +100,8 @@ public class SolarTerm {
                 tl_mut.value = t;
                 // Re-call chklowvalue with updated tl_mut and vl_mut, using the new vu_mut
                 chklowvalue(tl_mut, vl_mut, vu_mut, termang);
+                t=tl_mut.value;
+                v=vl_mut.value;
             } else {
                 vu_mut.value = v;
                 tu_mut.value = t;

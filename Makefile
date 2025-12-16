@@ -42,6 +42,9 @@ OBJS=$(COMPONENTS:%=%.o)
 CFLAGS += -O2
 CXXFLAGS += -O2
 
+all: ccal testterms testday testcppfmod
+	./testterms
+
 ccal:	ccal.o $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ -lm
 testterms: testterms.o $(OBJS)
@@ -62,4 +65,4 @@ install-man:
 	$(INSTALL) -m 0644 ccalpdf.1 $(MANDIR)/man1
 
 clean:
-	$(RM) *.o core ccal
+	$(RM) *.o core ccal testterms testday testcppfmod

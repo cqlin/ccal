@@ -15,14 +15,14 @@ public class Nutation {
 	private static short[][] napl_t;
 	private static double[][] cpl_t;
 
-	public Nutation() {
+	static {
 		setNals();
 		setCls();
 		setNapl();
 		setCpl();
 	}
 
-	private void setNals() {
+	private static void setNals() {
 		/*
 		   Luni-Solar argument multipliers:
 		       L     L'    F     D     Om
@@ -167,7 +167,7 @@ public class Nutation {
 		};
 	}
 
-	private void setCls() {
+	private static void setCls() {
 		/*
     Luni-Solar nutation coefficients, unit 1e-7 arcsec:
     longitude (sin, t*sin, cos), obliquity (cos, t*cos, sin)
@@ -856,7 +856,7 @@ public class Nutation {
 			{        -3.0,       0.0,      0.0,        2.0,     0.0,     0.0}};
 	}
 
-	private void setNapl() {
+	private static void setNapl() {
 
 		/*
     Planetary argument multipliers:
@@ -1552,7 +1552,7 @@ public class Nutation {
 			{ 0,  0,  2,  2,  2,  0,  0,  2,  0, -2,  0,  0,  0,  0}};
 	}
 
-	private void setCpl() {
+	private static void setCpl() {
 		/*
     Planetary nutation coefficients, unit 1e-7 arcsec:
     longitude (sin, cos), obliquity (sin, cos)

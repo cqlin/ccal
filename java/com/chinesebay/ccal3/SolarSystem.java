@@ -2,6 +2,8 @@ package com.chinesebay.ccal3;
 
 import static com.chinesebay.ccal2.NovasConstants.*;
 
+import java.util.Arrays;
+
 public class SolarSystem {
 
     private static class SunCon {
@@ -96,12 +98,13 @@ public class SolarSystem {
 
         lon = 4.9353929 + 62833.1961680 * u + factor * sum_lon;
         lon += ((-0.1371679461 - 0.2918293271 * t) * ASEC2RAD);
-
+        
         lon = lon % TWOPI;
         if (lon < 0.0) {
             lon += TWOPI;
         }
-
+        //System.out.println(String.format("3#lon=%.16f",lon));
+        
         dis[0] = 1.0001026 + factor * sum_r;
         
         emean = (84381.406 + (-46.836769 + (-0.0001831 + 0.00200340 * t) * t) * t) * ASEC2RAD;
@@ -115,6 +118,7 @@ public class SolarSystem {
         ra[0] = ra[0] / 15.0;
 
         dec[0] = Math.asin(sin_lon * Math.sin(emean)) * RAD2DEG;
+        //System.out.println(String.format("lon=%.16f,emean=%.16f,ra=%.16f,dec=%.16f", lon,emean,ra[0],dec[0]));
     }
 
     private static final double[] pm = {1047.349, 3497.898, 22903.0, 19412.2};
@@ -182,6 +186,7 @@ public class SolarSystem {
                 double[] decs = new double[1];
                 double[] diss = new double[1];
                 sun_eph(qjd, ras, decs, diss);
+                //System.out.println(String.format("#sunEph:qjd=%f, ras=%s, decs=%s, diss=%s, i=%d",qjd,Arrays.toString(ras),Arrays.toString(decs),Arrays.toString(diss),i));
                 double[] pos1 = Novas.radec2vector(ras[0], decs[0], diss[0]);
                 double[] pos2 = Novas.precession(qjd, pos1, T0);
                 p[i][0] = -pos2[0];
@@ -197,6 +202,7 @@ public class SolarSystem {
             return result;
         }
 
+        //System.out.println(String.format("#1:pos=%s,vloc=%s", Arrays.toString(result.position),Arrays.toString(result.velocity)));
         if (origin == 0) {
             if (Math.abs(tjd - tlast) >= 1.0e-06) {
                 for (i = 0; i < 3; i++) {
@@ -239,6 +245,8 @@ public class SolarSystem {
                 result.velocity[i] -= vbary[i];
             }
         }
+        //System.out.println(String.format("#2:pos=%s,vloc=%s", Arrays.toString(result.position),Arrays.toString(result.velocity)));
+
         return result;
     }
 }

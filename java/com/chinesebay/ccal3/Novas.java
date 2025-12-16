@@ -2,8 +2,6 @@ package com.chinesebay.ccal3;
 
 import static com.chinesebay.ccal3.NovasConstants.*;
 
-import com.chinesebay.ccal.Novascon;
-
 // This is a placeholder for the Novas class which will contain the fund_args method.
 public class Novas {
 
@@ -426,7 +424,7 @@ public class Novas {
 
     public static double mean_obliq(double jd_tdb) {
         double t, epsilon;
-        t = (jd_tdb - Novascon.T0) / 36525.0;
+        t = (jd_tdb - NovasConstants.T0) / 36525.0;
         epsilon = ((((-0.0000000434 * t
                 - 0.000000576) * t
                 + 0.00200340) * t

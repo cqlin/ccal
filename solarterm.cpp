@@ -59,6 +59,7 @@ double timeangle(double t)
     if (angle < 0.0)
         angle += 2.0 * PI;
     angle *= 180.0 / PI;
+    //printf("timeangle:%.12f=%.12f\n",t,angle);
     return angle;
 }
 
@@ -114,6 +115,7 @@ double termtime(double tstart, double tend, double termang)
 	    	vu = v;
 	    	tu = t;
 	    }
+	    //printf("tl=%.12f,tu=%.12f,vl=%.12f,vu=%.12f,v=%.12f,t=%.12f,f=%.12f\n",tl,tu,vl,vu,v,t,f);
     } while (fabs(v) > errlimit);
     return tt2ut(t);
 }
@@ -135,6 +137,7 @@ void solarterm(short int year, double& jdpws, vdouble& vjdterms)
     dstart = (int) julian_date(year - 1, 12, 12, 12.0);
     dend = (int) julian_date(year - 1, 12, 25, 12.0);
     jdpws = termtime(dstart, dend, 0.0) + offs;
+    //printf("year=%d,dstart=%d,dend=%d,jdpws=%.12f\n",year,dstart,dend,jdpws);
     vjdterms.resize(24);
     for (j = 0; j < 24; j++)
     {

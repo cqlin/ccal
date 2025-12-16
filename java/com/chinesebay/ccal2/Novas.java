@@ -550,6 +550,7 @@ public class Novas {
      * The result has the same sign as x (the dividend).
      */
     private static double fmod(double x, double y) {
+    	//return Math.IEEEremainder(x,y);
         // C fmod: result = x - trunc(x/y) * y
         // trunc rounds towards zero, floor rounds towards negative infinity
         // For negative x: trunc(x/y) != floor(x/y)
