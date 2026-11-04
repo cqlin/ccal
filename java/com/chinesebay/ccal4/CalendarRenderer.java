@@ -109,52 +109,37 @@ final class CalendarRenderer {
 
     private static String renderHtml(CliOptions options, LunarYearData data, ChineseText text) {
         String charset = options.encoding == 'u' ? "utf-8" : options.encoding == 'b' ? "big5" : "gb2312";
-        StringBuilder result = new StringBuilder("<html>\n<head>\n");
+        StringBuilder result = new StringBuilder("<!DOCTYPE html>\n<html lang=\"zh\">\n<head>\n");
         result.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=")
                 .append(charset).append("\">\n")
-                .append("<meta name=\"GENERATOR\" content=\"ccal-2.5.3 by Zhuo Meng, http://thunder.cwru.edu/ccal/\">\n")
+                .append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+                .append("<link rel=\"stylesheet\" href=\"calendar.css\">\n")
                 .append("<title>Chinese Calendar for ");
         if (options.singleMonth)
-            result.append(ChineseText.MONTH_NAMES[options.month - 1]).append(' ').append(options.year);
-        else
-            result.append("Year ").append(options.year);
-        result.append(" / ").append(options.year).append(text.year());
-        if (options.singleMonth)
-            result.append(options.month).append(text.month());
-        result.append("</title>\n</head>\n<body>\n<center>\n")
-                .append("<table border=\"1\" cellspacing=\"1\" width=\"90%\">\n");
+            result.append(ChineseText.MONTH_NAMES[options.month - 1]).append(' ');
+        result.append(options.year).append("</title>\n</head>\n<body>\n")
+                .append("<main class=\"sheet ").append(options.singleMonth ? "single-month" : "annual")
+                .append("\">\n<h1 class=\"year\">").append(options.year).append("</h1>\n<div class=\"calendar\">\n");
         int first = options.singleMonth ? options.month : 1;
         int last = options.singleMonth ? options.month : 12;
         String[] weekdays = {"\u65e5", "\u4e00", "\u4e8c", "\u4e09", "\u56db", "\u4e94", "\u516d"};
         for (int month = first; month <= last; month++) {
             MonthModel model = new MonthModel(options.year, month, data, text);
-            result.append("<tr>\n<th colspan=\"7\" width=\"100%\">")
+            result.append("<section class=\"month\" data-month=\"").append(month)
+                    .append("\" aria-labelledby=\"month-").append(month).append("\">\n")
+                    .append("<h2 class=\"sr-only\" id=\"month-").append(month).append("\">")
                     .append(ChineseText.MONTH_NAMES[month - 1]).append(' ').append(options.year)
-                    .append("&#160;&#160;").append(escapeHtml(model.chineseHeaderWithoutGregorian()))
-                    .append("</th>\n</tr>\n<tr align=\"center\">\n");
+                    .append(' ').append(escapeHtml(model.chineseHeaderWithoutGregorian())).append("</h2>\n")
+                    .append("<table aria-labelledby=\"month-").append(month).append("\">\n<thead><tr>\n");
             for (int day = 0; day < 7; day++) {
-                appendHtmlCellOpen(result, day);
-                result.append(ChineseText.DAY_NAMES[day].substring(0, 3)).append(' ').append(weekdays[day]);
-                appendHtmlFontClose(result, day);
-                result.append("</td>\n");
+                result.append("<th scope=\"col\" aria-label=\"").append(ChineseText.DAY_NAMES[day]).append("\">")
+                        .append(weekdays[day]).append("</th>\n");
             }
-            result.append("</tr>\n");
+            result.append("</tr></thead>\n<tbody>\n");
             appendHtmlWeeks(result, options.year, month, model, text);
+            result.append("</tbody></table>\n</section>\n");
         }
-        return result.append("</table>\n</center>\n</body>\n</html>\n").toString();
-    }
-
-    private static void appendHtmlCellOpen(StringBuilder result, int weekday) {
-        result.append("<td width=\"").append(weekday == 0 || weekday == 6 ? 15 : 14).append("%\">");
-        if (weekday == 0)
-            result.append("<font color=\"#FF0000\">");
-        else if (weekday == 6)
-            result.append("<font color=\"#00E600\">");
-    }
-
-    private static void appendHtmlFontClose(StringBuilder result, int weekday) {
-        if (weekday == 0 || weekday == 6)
-            result.append("</font>");
+        return result.append("</div>\n</main>\n</body>\n</html>\n").toString();
     }
 
     private static void appendHtmlWeeks(StringBuilder result, int year, int month, MonthModel model,
@@ -162,40 +147,28 @@ final class CalendarRenderer {
         int firstDayOfWeek = CalendarMath.dayOfWeek(year, month, 1);
         int days = CalendarMath.daysInMonth(year, month);
         int day = 1;
-        int weeks = weekCount(firstDayOfWeek, days);
-        for (int week = 0; week < weeks; week++) {
-            result.append("<tr align=\"right\">\n");
+        for (int week = 0; week < 6; week++) {
+            result.append("<tr>\n");
             for (int weekday = 0; weekday < 7; weekday++) {
-                appendHtmlCellOpen(result, weekday);
                 if ((week == 0 && weekday < firstDayOfWeek) || day > days) {
-                    result.append("&#160;");
-                    appendHtmlFontClose(result, weekday);
-                    result.append("</td>\n");
+                    result.append("<td class=\"empty\"></td>\n");
                     continue;
                 }
                 DayModel value = model.day(day++);
-                result.append(padLeft(Integer.toString(value.gregorianDay), 2)).append(' ');
-                String label;
-                boolean padding;
+                result.append("<td><span class=\"day\">").append(value.gregorianDay)
+                        .append("</span><span class=\"lunar\">");
                 if (value.solarTermIndex >= 0) {
                     if (value.newLunarMonth)
-                        result.append(text.lunarMonthShort(value.lunarMonth));
-                    label = text.solarTerm(value.solarTermIndex);
-                    padding = !value.newLunarMonth;
+                        result.append(escapeHtml(text.lunarMonthShort(value.lunarMonth)));
+                    result.append(escapeHtml(text.solarTerm(value.solarTermIndex)));
                 } else if (value.newLunarMonth) {
-                    label = text.lunarMonthShort(value.lunarMonth);
-                    padding = label.length() == 2;
+                    result.append(escapeHtml(text.lunarMonthShort(value.lunarMonth)));
                 } else {
                     if (value.gregorianDay == 1)
-                        result.append(text.lunarMonthShort(value.lunarMonth));
-                    label = text.lunarDay(value.lunarDay);
-                    padding = value.gregorianDay != 1;
+                        result.append(escapeHtml(text.lunarMonthShort(value.lunarMonth)));
+                    result.append(escapeHtml(text.lunarDay(value.lunarDay)));
                 }
-                result.append(escapeHtml(label));
-                appendHtmlFontClose(result, weekday);
-                if (padding)
-                    result.append("&#160;&#160;");
-                result.append("</td>\n");
+                result.append("</span></td>\n");
             }
             result.append("</tr>\n");
         }

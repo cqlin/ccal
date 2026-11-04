@@ -413,9 +413,9 @@ public class Ccal {
                 System.out.print(" ");
             System.out.println(monthhead);
         } else if (pmode == 1) {
-            System.out.println("<tr>");
-            System.out.printf("<th colspan=\"7\" width=\"100%%\">%s</th>\n", monthhead);
-            System.out.println("</tr>");
+            System.out.printf("<section class=\"month\" data-month=\"%d\" aria-labelledby=\"month-%d\">\n", month, month);
+            System.out.printf("<h2 class=\"sr-only\" id=\"month-%d\">%s</h2>\n", month, monthhead);
+            System.out.printf("<table aria-labelledby=\"month-%d\">\n", month);
         } else if (pmode == 3) {
             System.out.printf("<ccal:month value=\"%d\" name=\"%s\" cname=\"%s\">\n",
                 month, MONTH_NAMES[month - 1], monthhead);
@@ -453,20 +453,11 @@ public class Ccal {
             }
             System.out.println();
         } else if (pmode == 1) {
-            System.out.println("<tr align=\"center\">");
-            for (int i = 0; i < 7; i++) {
-                String dayshort = DAY_NAMES[i].substring(0, 3);
-                if (i == 0)
-                    System.out.printf("<td width=\"15%%\"><font color=\"#FF0000\">%s %s</font></td>\n",
-                        dayshort, CHmiscchar[15]);
-                else if (i == 6)
-                    System.out.printf("<td width=\"15%%\"><font color=\"#00E600\">%s %s</font></td>\n",
-                        dayshort, CHmiscchar[i]);
-                else
-                    System.out.printf("<td width=\"14%%\">%s %s</td>\n",
-                        dayshort, CHmiscchar[i]);
-            }
-            System.out.println("</tr>");
+            System.out.println("<thead><tr>");
+            for (int i = 0; i < 7; i++)
+                System.out.printf("<th scope=\"col\" aria-label=\"%s\">%s</th>\n",
+                    DAY_NAMES[i], i == 0 ? CHmiscchar[15] : CHmiscchar[i]);
+            System.out.println("</tr></thead><tbody>");
         } else if (pmode == 2 && bSingle) {
             System.out.println("% Day names\n14 1 SF\n/fsc 15 def");
             for (int i = 0; i < 7; i++) {
@@ -492,7 +483,7 @@ public class Ccal {
         // Print calendar days (at most 6 weeks)
         for (int w = 0; w < nWeeks; w++) {
             if (pmode == 1) {
-                System.out.println("<tr align=\"right\">");
+                System.out.println("<tr>");
             }
             if (pmode == 3) {
                 System.out.println("<ccal:week>");
@@ -500,12 +491,7 @@ public class Ccal {
 
             for (int i = 0; i < 7; i++) {
                 if (pmode == 1) {
-                    if (i == 0)
-                        System.out.print("<td width=\"15%\"><font color=\"#FF0000\">");
-                    else if (i == 6)
-                        System.out.print("<td width=\"15%\"><font color=\"#00E600\">");
-                    else
-                        System.out.print("<td width=\"14%\">");
+                    System.out.print("<td>");
                 }
                 if (pmode == 3) {
                     System.out.print("<ccal:day ");
@@ -513,10 +499,7 @@ public class Ccal {
 
                 if (dcnt > realDaysInMonth) {
                     if (pmode == 1) {
-                        if (i == 0 || i == 6)
-                            System.out.println("&#160;</font></td>");
-                        else
-                            System.out.println("&#160;</td>");
+                        System.out.println("&#160;</td>");
                         continue;
                     }
                     if (pmode == 3) {
@@ -531,10 +514,7 @@ public class Ccal {
                         if (pmode == 0)
                             System.out.printf("%10s", " ");
                         else if (pmode == 1) {
-                            if (i == 0 || i == 6)
-                                System.out.println("&#160;</font></td>");
-                            else
-                                System.out.println("&#160;</td>");
+                            System.out.println("&#160;</td>");
                         } else if (pmode == 3) {
                             System.out.println("/>");
                         }
@@ -572,8 +552,10 @@ public class Ccal {
                 boolean isToday = (todayYear == year && todayMonth == month && todayDay == dcnt);
 
                 // Print the day number
-                if (pmode == 0 || pmode == 1) {
+                if (pmode == 0) {
                     System.out.printf("%2d", dcnt);
+                } else if (pmode == 1) {
+                    System.out.printf("<span class=\"day\">%d</span><span class=\"lunar\">", dcnt);
                 } else if (pmode == 3) {
                     System.out.printf("value=\"%d\" cmonth=\"%d\" leap=\"%s\" cdate=\"%d\" ",
                         dcnt, cmonth, (leap == 'R' ? "R" : ""), ldcnt);
@@ -618,17 +600,13 @@ public class Ccal {
                         }
                     } else if (pmode == 1) {
                         if (dcnt == 1)
-                            System.out.print(" " + cmonname);
+                            System.out.print(cmonname);
                         else
                             System.out.print(" ");
                         cdayname = MiscData.number2DayCH(ldcnt);
                         System.out.print(cdayname);
-                        if (i == 0 || i == 6)
-                            System.out.print("</font>");
-                        if (cdayname.length() <= 2 * nCHchars && dcnt != 1)
-                            System.out.println("&#160;&#160;</td>");
-                        else
-                            System.out.println("</td>");
+
+                        System.out.println("</span></td>");
                     } else if (pmode == 2) {
                         if (bSingle) {
                             if (dcnt == 1) {
@@ -665,12 +643,8 @@ public class Ccal {
                     } else if (pmode == 1) {
                         cdayname = MiscData.number2DayCH(ldcnt);
                         System.out.print(" " + cdayname);
-                        if (i == 0 || i == 6)
-                            System.out.print("</font>");
-                        if (cdayname.length() == 2 * nCHchars)
-                            System.out.println("&#160;&#160;</td>");
-                        else
-                            System.out.println("</td>");
+
+                        System.out.println("</span></td>");
                     }
                     if (pmode == 2)
                         printPostScriptDay(PSMonth.number2DayPS(ldcnt), i, true);
@@ -690,12 +664,8 @@ public class Ccal {
                         else
                             System.out.print(" ");
                         System.out.print(CHjieqi[termcnt++]);
-                        if (i == 0 || i == 6)
-                            System.out.print("</font>");
-                        if (!sameday)
-                            System.out.println("&#160;&#160;</td>");
-                        else
-                            System.out.println("</td>");
+
+                        System.out.println("</span></td>");
                     } else if (pmode == 3) {
                         cdayname = CHjieqi[termcnt++];
                     } else if (pmode == 2) {
@@ -742,12 +712,8 @@ public class Ccal {
                             cmonname = cmonname.substring(0, idx + CHmiscchar[14].length());
                         if (pmode == 1) {
                             System.out.print(" " + cmonname);
-                            if (i == 0 || i == 6)
-                                System.out.print("</font>");
-                            if (cmonname.length() == 2 * nCHchars)
-                                System.out.println("&#160;&#160;</td>");
-                            else
-                                System.out.println("</td>");
+
+                            System.out.println("</span></td>");
                         }
                     } else if (pmode == 2) {
                         cmonname = PSMonth.number2MonthPS(vmonth.get(moncnt++), 1, 30, true);
@@ -775,6 +741,9 @@ public class Ccal {
             }
         }
 
+        if (pmode == 1) {
+            System.out.println("</tbody></table></section>");
+        }
         if (pmode == 2 && !bSingle) {
             System.out.println("grestore");
         } else if (pmode == 3) {

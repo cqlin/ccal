@@ -54,9 +54,15 @@ final class RendererAndCliTest {
         Assertions.contains(chinese, "Sun  \u65e5   Mon  \u4e00   ", "native Chinese weekday spacing");
         Assertions.contains(chinese, "10 \u6b63\u6708   ", "native Chinese month-cell padding");
         String html = render(new String[] {"-t", "-u", "2", "2024"}, fixedDate);
-        Assertions.contains(html, "<table border=\"1\" cellspacing=\"1\" width=\"90%\">",
-                "HTML preserves the native markup");
-        Assertions.contains(html, "<tr align=\"right\">", "HTML calendar rows retain native alignment");
+        Assertions.contains(html, "<link rel=\"stylesheet\" href=\"calendar.css\">", "HTML uses external CSS");
+        Assertions.contains(html, "class=\"sheet single-month\"", "single-month layout");
+        Assertions.contains(html, "data-month=\"2\"", "month watermark");
+        Assertions.contains(html, "<span class=\"day\">29</span>", "HTML retains leap day");
+        Assertions.isTrue(!html.contains("<font") && !html.contains("style=") && !html.contains("<script"),
+                "HTML has no inline styling or scripts");
+        String annual = render(new String[] {"-t", "-u", "2027"}, fixedDate);
+        Assertions.contains(annual, "class=\"sheet annual\"", "annual layout");
+        Assertions.equalsInt(12, annual.split("<section ", -1).length - 1, "annual has twelve months");
         Assertions.contains(render(new String[] {"-t", "-b", "2", "2024"}, fixedDate), "charset=big5",
                 "HTML declares the actual output encoding");
         if (System.getProperty("os.name").startsWith("Windows")) {

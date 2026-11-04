@@ -83,31 +83,18 @@ public class HtmlMonth {
         dayname[result.length()] = 0;
     }
 
-    public static void PrintHeaderHTML(String titlestr, int month, int year, int nEncoding) {
-        System.out.print("<html>\n<head>\n<meta http-equiv=\"Content-Type\" ");
-        if (nEncoding == 'u')
-            System.out.print("content=\"text/html; charset=utf-8\">\n");
-        else if (nEncoding == 'g')
-            System.out.print("content=\"text/html; charset=gb2312\">\n");
-        else
-            System.out.print("content=\"text/html; charset=big5\">\n");
-        System.out.printf("<meta name=\"GENERATOR\" content=\"ccal-%s by Zhuo Meng, http://thunder.cwru.edu/ccal/\">\n", Verstr.versionstr);
-        String[][] miscchar;
-        if (nEncoding == 'u')
-            miscchar = U8miscchar;
-        else if (nEncoding == 'g')
-            miscchar = GBmiscchar;
-        else
-            miscchar = B5miscchar;
-        if (month != 0)
-            System.out.printf("<title>Chinese Calendar for %s / %d%s%d%s</title>\n", titlestr, year, miscchar[16][0], month, miscchar[14][0]);
-        else
-            System.out.printf("<title>Chinese Calendar for %s / %d%s</title>\n", titlestr, year, miscchar[16][0]);
-        System.out.print("</head>\n<body>\n<center>\n");
-        System.out.print("<table border=\"1\" cellspacing=\"1\" width=\"90%\">\n");
+    public static void PrintHeaderHTML(String title, int month, int year, int encoding) {
+        String charset = encoding == 'g' ? "gb2312" : encoding == 'b' ? "big5" : "utf-8";
+        System.out.println("<!DOCTYPE html>\n<html lang=\"zh\">\n<head>");
+        System.out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
+        System.out.println("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+        System.out.println("<link rel=\"stylesheet\" href=\"calendar.css\">");
+        System.out.println("<title>Chinese Calendar for " + title + "</title>\n</head>\n<body>");
+        System.out.println("<main class=\"sheet " + (month == 0 ? "annual" : "single-month") + "\">");
+        System.out.println("<h1 class=\"year\">" + year + "</h1>\n<div class=\"calendar\">");
     }
 
     public static void PrintClosingHTML() {
-        System.out.print("</table>\n</center>\n</body>\n</html>\n");
+        System.out.println("</div>\n</main>\n</body>\n</html>");
     }
 }

@@ -192,19 +192,17 @@ public class MiscData {
     }
 
     static void printHeaderHTML(String title, int month, int year, int encoding) {
-        String[] miscchar = getMiscCharArray(encoding);
         String charset = encoding == 'g' ? "gb2312" : encoding == 'b' ? "big5" : "utf-8";
-        System.out.println("<html>\n<head>");
+        System.out.println("<!DOCTYPE html>\n<html lang=\"zh\">\n<head>");
         System.out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
-        System.out.println("<meta name=\"GENERATOR\" content=\"ccal-2.5.3 by Zhuo Meng, http://thunder.cwru.edu/ccal/\">");
-        System.out.printf("<title>Chinese Calendar for %s / %d%s", title, year, miscchar[16]);
-        if (month != 0)
-            System.out.printf("%d%s", month, miscchar[14]);
-        System.out.println("</title>\n</head>\n<body>\n<center>");
-        System.out.println("<table border=\"1\" cellspacing=\"1\" width=\"90%\">");
+        System.out.println("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">");
+        System.out.println("<link rel=\"stylesheet\" href=\"calendar.css\">");
+        System.out.println("<title>Chinese Calendar for " + title + "</title>\n</head>\n<body>");
+        System.out.println("<main class=\"sheet " + (month == 0 ? "annual" : "single-month") + "\">");
+        System.out.println("<h1 class=\"year\">" + year + "</h1>\n<div class=\"calendar\">");
     }
 
     static void printClosingHTML() {
-        System.out.println("</table>\n</center>\n</body>\n</html>");
+        System.out.println("</div>\n</main>\n</body>\n</html>");
     }
 }

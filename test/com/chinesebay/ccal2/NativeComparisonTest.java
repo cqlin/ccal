@@ -8,6 +8,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -94,6 +96,22 @@ public final class NativeComparisonTest {
                 boolean postScript = Arrays.asList(calendarArgs).contains("-p");
                 String expected = normalize(nativeResult.output, postScript);
                 String actual = normalize(javaResult.output, postScript);
+                // HTML intentionally has a new layout; compare every nonempty date cell,
+                // in order, rather than requiring the obsolete native markup.
+                if (Arrays.asList(calendarArgs).contains("-t")) {
+                    if (!actual.contains("href=\"calendar.css\"") || actual.contains("style=")
+                            || actual.contains("<style") || actual.contains("<script") || actual.contains("<font"))
+                        throw new AssertionError("HTML must use external styling without inline scripts/styles");
+                    boolean single = actual.contains("class=\"sheet single-month\"");
+                    if (!single && !actual.contains("class=\"sheet annual\""))
+                        throw new AssertionError("HTML is missing its calendar layout class");
+                    int monthsInHtml = actual.split("<section class=\"month\"", -1).length - 1;
+                    if (monthsInHtml != (single ? 1 : 12)
+                            || actual.split("data-month=\"", -1).length - 1 != monthsInHtml)
+                        throw new AssertionError("HTML must render a table and watermark for each month");
+                    expected = htmlDates(expected);
+                    actual = htmlDates(actual);
+                }
                 if (nativeResult.exit != 0 || javaResult.exit != 0
                         || !Arrays.equals(nativeResult.error, javaResult.error) || !expected.equals(actual)) {
                     failures++;
@@ -114,9 +132,23 @@ public final class NativeComparisonTest {
             Files.delete(temporary);
         }
         System.out.println(mainClass + ": " + (cases.size() - failures) + "/" + cases.size()
-            + " native comparisons passed.");
+            + " comparisons passed (HTML date content; other formats exact).");
         if (failures != 0)
             throw new AssertionError(failures + " comparisons failed");
+    }
+
+    private static String htmlDates(String html) {
+        Matcher cells = Pattern.compile("<td\\b[^>]*>(.*?)</td>", Pattern.DOTALL).matcher(html);
+        StringBuilder result = new StringBuilder();
+        while (cells.find()) {
+            String label = cells.group(1).replaceAll("<[^>]*>", "")
+                .replace("&#160;", "").replace("&nbsp;", "").replaceAll("[ \\t\\r\\n]", "");
+            if (!label.isEmpty() && label.charAt(0) >= '0' && label.charAt(0) <= '9')
+                result.append(label).append('\n');
+        }
+        if (result.length() == 0)
+            throw new AssertionError("HTML contains no date cells");
+        return result.toString();
     }
 
     private static String[] concat(String[] first, String[] second) {

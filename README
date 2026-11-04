@@ -44,3 +44,22 @@ namespace properly.
 
 Refer to the man page for usage. 
 
+Java HTML calendars:
+The four Java implementations use calendar.css for the layout from calendar-matched.htm.
+Annual output keeps four columns and three rows on a US Letter landscape sheet,
+even on narrow screens (scroll horizontally). A single month is enlarged.
+Keep a copy of calendar.css in the same directory as the generated HTML file.
+There are no new libraries, scripts, inline styles, or changes to the native
+C++ HTML output. ASCII, XML and PostScript output are unchanged.
+
+For example, from the repository root in PowerShell (classes in bin):
+    $env:JAVA_HOME = $env:EXE4J_JAVA_HOME
+    cmd /c '""%JAVA_HOME%\bin\java.exe" -cp bin com.chinesebay.ccal4.CalendarMain -t -u 2027 > calendar.html"'
+The cmd redirection preserves UTF-8 bytes even in Windows PowerShell 5.
+Open calendar.html in a browser. Use Letter landscape, no browser headers/footers,
+and background graphics enabled when printing to retain the pink watermarks.
+Use Ccal in com.chinesebay.ccal or com.chinesebay.ccal3, or CCal in
+com.chinesebay.ccal2, to select one of the other implementations.
+HTML regression comparisons check daily content rather than native markup;
+the new markup intentionally differs from ccal.exe.
+

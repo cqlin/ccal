@@ -1,0 +1,71 @@
+/* A4 portrait, matching the reference's 4 x 3 year-at-a-glance layout. */
+@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #eee; color: #000; }
+.sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  /* Reference begins about 35mm down the page. */
+  padding: 35mm 6.4mm 0 10.6mm;
+  background: white;
+  font-family: "Bookman Old Style", "URW Bookman", "Times New Roman", serif;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.year {
+  margin: 0 0 4mm;
+  font: bold 28pt/1 "Times New Roman", "Nimbus Roman", serif;
+  text-align: center;
+}
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: 48.7mm;
+}
+.month {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  padding: 1mm 2mm 0;
+}
+/* Interior separators only; no outside border or day-cell borders. */
+.month:not(:nth-child(4n)) { border-right: .2pt solid #e6e6ff; }
+.month:nth-child(-n+8) { border-bottom: .2pt solid #e6e6ff; }
+.month::before {
+  content: attr(data-month);
+  position: absolute;
+  inset: 6mm 0 auto;
+  z-index: -1;
+  color: #ffe6ff;
+  font: bold 100pt/1 "Times New Roman", "Nimbus Roman", serif;
+  text-align: center;
+  pointer-events: none;
+}
+.month table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.month th, .month td { border: 0; padding: 0; text-align: center; font-weight: normal; }
+.month th {
+  height: 5mm;
+  font: 5pt/1 "SimSun", "Songti SC", "Noto Serif CJK SC", serif;
+}
+.month td { height: 6.7mm; vertical-align: top; }
+.day { display: block; font-size: 9pt; line-height: 1; }
+.lunar {
+  display: block;
+  white-space: nowrap;
+  font: 4.6pt/1.15 "SimSun", "Songti SC", "Noto Serif CJK SC", serif;
+}
+.month tr > :first-child { color: #ff0000; }
+.month tr > :last-child { color: #00cc00; }
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+}
+/* Keep the paper proportions on narrow screens; allow horizontal scrolling. */
+@media screen and (max-width: 800px) { .sheet { margin: 0; } }
+@media print {
+  html, body { margin: 0; background: white; }
+  .sheet { margin: 0; break-inside: avoid; }
+}

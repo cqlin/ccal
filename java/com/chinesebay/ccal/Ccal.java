@@ -447,8 +447,9 @@ public class Ccal {
 				System.out.print(" ");
 			System.out.println(monthhead);
 		} else if (pmode == 1) {
-			System.out.print("<tr>\n<th colspan=\"7\" width=\"100%\">");
-			System.out.printf("%s</th>\n</tr>\n", monthhead);
+			System.out.printf("<section class=\"month\" data-month=\"%d\" aria-labelledby=\"month-%d\">\n", month, month);
+			System.out.printf("<h2 class=\"sr-only\" id=\"month-%d\">%s</h2>\n", month, monthhead);
+			System.out.printf("<table aria-labelledby=\"month-%d\">\n", month);
 		} else if (pmode == 3) {
 			System.out.printf("<ccal:month value=\"%d\" name=\"%s\" cname=\"%s\">\n",
 					month, monnames[month - 1], monthhead);
@@ -489,19 +490,11 @@ public class Ccal {
 			}
 			System.out.println();
 		} else if (pmode == 1) {
-			System.out.println("<tr align=\"center\">");
-			for (int i = 0; i < 7; i++) {
-				dayshort = CcalData.daynames[i].substring(0, 3);
-				if (i == 0)
-					System.out.printf("<td width=\"15%%\"><font color=\"#FF0000\">%s %s</font></td>\n", dayshort,
-							CHmiscchar[15][0]);
-				else if (i == 6)
-					System.out.printf("<td width=\"15%%\"><font color=\"#00E600\">%s %s</font></td>\n", dayshort,
-							CHmiscchar[i][0]);
-				else
-					System.out.printf("<td width=\"14%%\">%s %s</td>\n", dayshort, CHmiscchar[i][0]);
-			}
-			System.out.println("</tr>");
+			System.out.println("<thead><tr>");
+			for (int i = 0; i < 7; i++)
+				System.out.printf("<th scope=\"col\" aria-label=\"%s\">%s</th>\n",
+					daynames[i], i == 0 ? CHmiscchar[15][0] : CHmiscchar[i][0]);
+			System.out.println("</tr></thead><tbody>");
 		} else if (pmode == 2) {
 			if (bSingle) {
 				System.out.println("% Day names\n14 1 SF\n/fsc 15 def");
@@ -534,29 +527,21 @@ public class Ccal {
 		String cdayname = "";
 		for (int w = 0; w < nWeeks; w++) {
 			if (pmode == 1) {
-				System.out.println("<tr align=\"right\">");
+				System.out.println("<tr>");
 			}
 			if (pmode == 3) {
 				System.out.println("<ccal:week>");
 			}
 			for (int i = 0; i < 7; i++) {
 				if (pmode == 1) {
-					if (i == 0)
-						System.out.print("<td width=\"15%\"><font color=\"#FF0000\">");
-					else if (i == 6)
-						System.out.print("<td width=\"15%\"><font color=\"#00E600\">");
-					else
-						System.out.print("<td width=\"14%\">");
+					System.out.print("<td>");
 				}
 				if (pmode == 3) {
 					System.out.print("<ccal:day ");
 				}
 				if (dcnt > daysinmonth[month - 1]) {
 					if (pmode == 1) {
-						if (i == 0 || i == 6)
-							System.out.print("&#160;</font></td>\n");
-						else
-							System.out.print("&#160;</td>\n");
+						System.out.print("&#160;</td>\n");
 						continue;
 					}
 					if (pmode == 3) {
@@ -570,10 +555,7 @@ public class Ccal {
 						if (pmode == 0)
 							System.out.print("          ");
 						else if (pmode == 1) {
-							if (i == 0 || i == 6)
-								System.out.print("&#160;</font></td>\n");
-							else
-								System.out.print("&#160;</td>\n");
+							System.out.print("&#160;</td>\n");
 						} else if (pmode == 3) {
 							System.out.print("/>\n");
 						}
@@ -603,9 +585,11 @@ public class Ccal {
 					if (pmode == 0)
 						System.out.print(ANSI_REV);
 				}
-				if (pmode == 0 || pmode == 1)
+				if (pmode == 0) {
 					System.out.printf("%2d", dcnt);
-				else if (pmode == 3) {
+				} else if (pmode == 1) {
+					System.out.printf("<span class=\"day\">%d</span><span class=\"lunar\">", dcnt);
+				} else if (pmode == 3) {
 					System.out.printf("value=\"%d\" cmonth=\"%d\" leap=\"%s\" cdate=\"%d\" ", dcnt, cmonth[0],
 							bufferString(leap), ldcnt);
 					Number2DayCH(ldcnt, nEncoding, cdaynameArr);
@@ -655,18 +639,14 @@ public class Ccal {
 						}
 					} else if (pmode == 1) {
 						if (dcnt == 1)
-							System.out.printf(" %s", cmonname);
+							System.out.printf("%s", cmonname);
 						else
 							System.out.print(" ");
 						Number2DayCH(ldcnt, nEncoding, cdaynameArr);
 						cdayname = bufferString(cdaynameArr);
 						System.out.print(cdayname);
-						if (i == 0 || i == 6)
-							System.out.print("</font>");
-						if (cdayname.length() == 2 * nCHchars && dcnt != 1)
-							System.out.print("&#160;&#160;</td>\n");
-						else
-							System.out.print("</td>\n");
+
+						System.out.print("</span></td>\n");
 					} else if (pmode == 2 && bSingle) {
 						if (dcnt == 1) { // This if block needs to be self-contained
 							if (moncnt > 0) {
@@ -716,12 +696,8 @@ public class Ccal {
 						Number2DayCH(ldcnt, nEncoding, cdaynameArr);
 						cdayname = bufferString(cdaynameArr);
 						System.out.printf(" %s", cdayname);
-						if (i == 0 || i == 6)
-							System.out.print("</font>");
-						if (cdayname.length() == 2 * nCHchars)
-							System.out.print("&#160;&#160;</td>\n");
-						else
-							System.out.print("</td>\n");
+
+						System.out.print("</span></td>\n");
 					} else if (pmode == 2) { // This else if is fine
 						Number2DayPS(ldcnt, cdaynameArr); // Uncommented
 						cdayname = bufferString(cdaynameArr);
@@ -746,12 +722,8 @@ public class Ccal {
 						else
 							System.out.print(" ");
 						System.out.printf("%s", CHjieqi[termcnt++][0]);
-						if (i == 0 || i == 6)
-							System.out.print("</font>");
-						if (!sameday)
-							System.out.print("&#160;&#160;</td>\n");
-						else
-							System.out.print("</td>\n");
+
+						System.out.print("</span></td>\n");
 					} else if (pmode == 3) {
 						cdayname = CHjieqi[termcnt++][0];
 					} else if (pmode == 2) {
@@ -798,12 +770,8 @@ public class Ccal {
 						cmonname = cmonname.substring(0, p);
 						if (pmode == 1) {
 							System.out.printf(" %s", cmonname);
-							if (i == 0 || i == 6)
-								System.out.print("</font>");
-							if (cmonname.length() == 2 * nCHchars)
-								System.out.print("&#160;&#160;</td>\n");
-							else
-								System.out.print("</td>\n");
+
+							System.out.print("</span></td>\n");
 						}
 					} else if (pmode == 2 && bSingle) {
 						Number2MonthPS(vmonth.get(moncnt++), 1, 30, true, cmonnameArr); // Uncommented
@@ -844,6 +812,9 @@ public class Ccal {
 			} else if (pmode == 3) {
 				System.out.println("</ccal:week>");
 			}
+		}
+		if (pmode == 1) {
+			System.out.println("</tbody></table></section>");
 		}
 		if (pmode == 2 && !bSingle) {
 			System.out.println("grestore");
