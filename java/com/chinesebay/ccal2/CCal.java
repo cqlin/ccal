@@ -18,8 +18,11 @@ package com.chinesebay.ccal2;
    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Locale;
 
 /**
  * CCal.java - Chinese Calendar Main Program
@@ -111,6 +114,49 @@ public class CCal {
         System.out.printf(" [%2d]Y%c ", month, leap == 0 ? ' ' : leap);
     }
 
+    private static String postScriptMonthHeader(short year, short month, int cyear,
+            int moncnt, double jdnext, int nstartlm, int ndayslm, double nextnew,
+            ArrayList<Double> vmoons, ArrayList<Double> vmonth) {
+        boolean twoMonths = moncnt < vmoons.size() - 1 && vmoons.get(moncnt + 1) < jdnext;
+        boolean noNewMoon = month == 2 && vmoons.get(moncnt) >= jdnext;
+        boolean previousYear = month == 1 && vmonth.get(moncnt).intValue() != 1;
+        int stem = previousYear ? (cyear + 59) % 10 : cyear % 10;
+        int branch = previousYear ? (cyear + 59) % 12 : cyear % 12;
+        String lunar;
+        if (noNewMoon) {
+            int days = (int)(vmoons.get(moncnt) - vmoons.get(moncnt - 1));
+            lunar = PSMonth.number2MonthPS(vmonth.get(moncnt - 1), nstartlm, days, false);
+            lunar = lunar.substring(0, lunar.indexOf(PSMonth.PSbigmchar[14][0]) + 8);
+        } else {
+            lunar = PSMonth.number2MonthPS(vmonth.get(moncnt), nstartlm, ndayslm, false);
+        }
+        String header = String.format("20 1 SF (%s %d) S\n/fsc 21 def gsave ptc\n%s%s%s%s%s",
+            MONTH_NAMES[month - 1], year, PSMonth.PSbigmchar[20][0],
+            PSMonth.PStiangan[stem][0], PSMonth.PSdizhi[branch][0], PSMonth.PSbigmchar[16][0], lunar);
+        if (twoMonths) {
+            int start = nstartlm + (int)(vmoons.get(moncnt + 1) - vmoons.get(moncnt));
+            int days = (int)((moncnt < vmoons.size() - 2 ? vmoons.get(moncnt + 2) : nextnew)
+                - vmoons.get(moncnt + 1));
+            if (previousYear)
+                header += "\n";
+            header += PSMonth.PSbigmchar[19][0];
+            if (previousYear)
+                header += PSMonth.PStiangan[cyear % 10][0] + PSMonth.PSdizhi[cyear % 12][0]
+                    + PSMonth.PSbigmchar[16][0];
+            header += PSMonth.number2MonthPS(vmonth.get(moncnt + 1), start, days, false);
+        }
+        return header + "grestore";
+    }
+
+    private static void printPostScriptDay(String name, int weekday, boolean single) {
+        if (!single && name.length() > 8)
+            System.out.printf(" grestore -%d 0 rmoveto gsave ptc", (name.length() - 8) / 4 * 3);
+        System.out.printf(" %s\n", name);
+        if (weekday == 0 || weekday == 6)
+            System.out.println("grestore");
+        System.out.println("grestore");
+    }
+
     /**
      * Main calendar printing method
      * Prints a calendar for a given month with Chinese calendar information
@@ -141,8 +187,8 @@ public class CCal {
             daynamesCH = DAY_NAMES_B5;
         }
 
-        int nCHchars = CHmiscchar[14].length() / (nEncoding == 'a' ? 1 :
-                      (nEncoding == 'u' ? 3 : 2));
+        // Java strings contain characters, not the encoded bytes used by C++.
+        int nCHchars = CHmiscchar[14].length();
         String sp = (pmode == 1) ? "&#160;" : " ";
 
         // Set julian day counter to 1st of the month
@@ -300,6 +346,25 @@ public class CCal {
                         CHtiangan[tiancnt], CHdizhi[dicnt],
                         CHmiscchar[16], cmonname, CHmiscchar[19], cmonname1));
                 }
+            } else if (month == 2 && vmoons.get(moncnt) >= jdnext) {
+                // No new moon in February: describe the current lunar month.
+                ndayslm = (int)(vmoons.get(moncnt) - vmoons.get(moncnt - 1));
+                int[] currentMonth = getMonthNumber(vmonth.get(moncnt - 1));
+                cmonth = currentMonth[0];
+                leap = (char)currentMonth[1];
+                if (pmode == 0 && nEncoding == 'a') {
+                    monthhead.append(String.format("%s %d (Year %s%s, Month %s%d%c)",
+                        MONTH_NAMES[month - 1], year, TIANGAN[tiancnt], DIZHI[dicnt],
+                        (leap == 'R' ? "R" : ""), cmonth, (ndayslm == 30) ? 'D' : 'X'));
+                } else if (pmode != 2) {
+                    cmonname = HtmlMonth.number2MonthCH(vmonth.get(moncnt - 1), nstartlm, ndayslm);
+                    int end = cmonname.indexOf(CHmiscchar[14]) + 2 * nCHchars;
+                    cmonname = cmonname.substring(0, end);
+                    if (pmode != 3)
+                        monthhead.append(MONTH_NAMES[month - 1]).append(' ').append(year).append(sp).append(sp);
+                    monthhead.append(CHtiangan[tiancnt]).append(CHdizhi[dicnt])
+                        .append(CHmiscchar[16]).append(cmonname);
+                }
             } else {
                 // Single lunar month
                 if (pmode == 0 && nEncoding == 'a') {
@@ -322,12 +387,10 @@ public class CCal {
         // Print month header
         if (pmode == 0) {
             int nHeadLen = monthhead.length();
-            if (nEncoding == 'u') {
-                int nasc = 0;
+            if (nEncoding != 'a') {
                 for (int i = 0; i < monthhead.length(); i++)
-                    if ((int)monthhead.charAt(i) < 0x80)
-                        nasc++;
-                nHeadLen = (monthhead.length() - nasc) * 2 / 3 + nasc;
+                    if (monthhead.charAt(i) >= 0x80)
+                        nHeadLen++;
             }
             int nmove = (68 - nHeadLen) / 2;
             if (nmove < 0)
@@ -343,7 +406,19 @@ public class CCal {
             System.out.printf("<ccal:month value=\"%d\" name=\"%s\" cname=\"%s\">\n",
                 month, MONTH_NAMES[month - 1], monthhead);
         } else if (pmode == 2 && bSingle) {
+            monthhead = new StringBuilder(postScriptMonthHeader(year, month, cyear, moncnt,
+                jdnext, nstartlm, ndayslm, nextnew, vmoons, vmonth));
             PSMonth.printHeaderMonthPS(monthhead.toString(), month, true, bIsSim, bNeedsRun, nWeeks);
+            int nlen = monthhead.indexOf(")") - monthhead.indexOf("(") - 1;
+            int nheadlen = monthhead.length();
+            int nmove;
+            if (nheadlen - nlen - 66 > 56)
+                nmove = (4200 - 78 * (nlen + (nheadlen - nlen - 86) / 2 + 3)) / 2;
+            else if (nheadlen - nlen - 66 > 30)
+                nmove = (4200 - 78 * (nlen + (nheadlen - nlen - 66) / 2 + 3)) / 2;
+            else
+                nmove = (4200 - 78 * (nlen + (nheadlen - nlen - 46) / 2 + 2)) / 2;
+            System.out.printf("%d 2475 m\n%s\n", Math.max(0, nmove), monthhead);
         } else if (pmode == 2) {
             System.out.printf("%% %s %d\n", MONTH_NAMES[month - 1], year);
             int posx = (month - 1) % 4 * 140;
@@ -357,7 +432,7 @@ public class CCal {
         // Print day of week headers
         if (pmode == 0) {
             for (int i = 0; i < 7; i++) {
-                if (nEncoding != 'u')
+                if (nEncoding == 'a')
                     System.out.printf("%-10s", daynamesCH[i]);
                 else
                     System.out.printf("%s   ", daynamesCH[i]);
@@ -486,13 +561,37 @@ public class CCal {
                 if (pmode == 0 || pmode == 1) {
                     System.out.printf("%2d", dcnt);
                 } else if (pmode == 3) {
-                    String cdayname = HtmlMonth.number2DayCH(ldcnt);
                     System.out.printf("value=\"%d\" cmonth=\"%d\" leap=\"%s\" cdate=\"%d\" ",
                         dcnt, cmonth, (leap == 'R' ? "R" : ""), ldcnt);
+                } else if (bSingle) {
+                    int posx = i * 600 + 50;
+                    int posy = nWeeks == 5 ? 1800 - w * 450 + 295 : 1875 - w * 375 + 220;
+                    if (i == 0)
+                        System.out.println("gsave 1 0 0 K");
+                    else if (i == 6)
+                        System.out.println("gsave 0 0.8 0 K");
+                    System.out.printf("%d %d m (%2d) S\ngsave 8 0 SF ", posx, posy, dcnt);
+                    posx += 170;
+                    if (dcnt == 1 || ldcnt == 1)
+                        System.out.printf("%d %d m (%d%s.%d) S grestore\n%d %d m",
+                            posx + 5, posy + 56, cmonth, leap == 'R' ? "R" : "", ldcnt, posx, posy - 2);
+                    else
+                        System.out.printf("%d %d m (%2d) S grestore\n%d %d m",
+                            posx + 5, posy + 56, ldcnt, posx, posy - 2);
+                    System.out.print(" gsave ptc");
+                } else {
+                    int posx = i * 19;
+                    int posy = -w * 19 - 14;
+                    if (i == 0)
+                        System.out.println("gsave 1 0 0 K");
+                    else if (i == 6)
+                        System.out.println("gsave 0 0.8 0 K");
+                    System.out.printf("%d %d moveto (%2d) S\n", posx, posy, dcnt);
+                    System.out.printf("%d %d moveto gsave ptc", posx, posy - 7);
                 }
 
                 // Print lunar date or solar term
-                String cdayname = "";
+                String cdayname = (pmode == 3) ? HtmlMonth.number2DayCH(ldcnt) : "";
                 if (!sameday && (termcnt >= vterms.size() || jdcnt != vterms.get(termcnt)) &&
                     (moncnt >= vmoons.size() || jdcnt != vmoons.get(moncnt))) {
                     // Regular lunar date
@@ -516,6 +615,20 @@ public class CCal {
                             System.out.println("&#160;&#160;</td>");
                         else
                             System.out.println("</td>");
+                    } else if (pmode == 2) {
+                        if (bSingle) {
+                            if (dcnt == 1) {
+                                cmonname = PSMonth.number2MonthPS(moncnt > 0 ? vmonth.get(moncnt - 1) : lastmon,
+                                    1, 30, true);
+                                System.out.print(" " + cmonname);
+                            } else
+                                System.out.print(" ");
+                            System.out.printf("%s\n", PSMonth.number2DayPS(ldcnt));
+                            if (i == 0 || i == 6)
+                                System.out.println("grestore");
+                            System.out.println("grestore");
+                        } else
+                            printPostScriptDay(PSMonth.number2DayPS(ldcnt), i, false);
                     }
                 } else if (sameday) {
                     // Lunar month starts on a solar term day
@@ -545,6 +658,8 @@ public class CCal {
                         else
                             System.out.println("</td>");
                     }
+                    if (pmode == 2)
+                        printPostScriptDay(PSMonth.number2DayPS(ldcnt), i, true);
                     sameday = false;
                 } else if (termcnt < vterms.size() && jdcnt == vterms.get(termcnt)) {
                     // Solar term day
@@ -569,6 +684,24 @@ public class CCal {
                             System.out.println("</td>");
                     } else if (pmode == 3) {
                         cdayname = CHjieqi[termcnt++];
+                    } else if (pmode == 2) {
+                        if (sameday) {
+                            cmonname = PSMonth.number2MonthPS(vmonth.get(moncnt++), 1, 30, true);
+                            int nlen = cmonname.length();
+                            if (!bSingle)
+                                System.out.print(" grestore -6 0 rmoveto gsave ptc");
+                            if (!bSingle && nlen > 8)
+                                System.out.printf(Locale.ROOT, " gsave %f 1 scale %s", 16.0 / (nlen + 8.0), cmonname);
+                            else
+                                System.out.print(" " + cmonname);
+                        } else
+                            System.out.print(" ");
+                        System.out.printf("%s\n", PSMonth.PSjieqi[termcnt++][0]);
+                        if (sameday && !bSingle && cmonname.length() > 8)
+                            System.out.println("grestore");
+                        if (i == 0 || i == 6)
+                            System.out.println("grestore");
+                        System.out.println("grestore");
                     }
                 } else {
                     // Start of lunar month
@@ -602,6 +735,9 @@ public class CCal {
                             else
                                 System.out.println("</td>");
                         }
+                    } else if (pmode == 2) {
+                        cmonname = PSMonth.number2MonthPS(vmonth.get(moncnt++), 1, 30, true);
+                        printPostScriptDay(cmonname, i, bSingle);
                     }
                 }
 
@@ -713,10 +849,9 @@ public class CCal {
             }
         }
 
+        HtmlMonth.setSimplified(nEncoding != 'b');
         if (pmode != 2) {
             if (bIsUTF8 || pmode == 3) {
-                if (nEncoding == 'b')
-                    HtmlMonth.setSimplified(false);
                 nEncoding = 'u';
             }
         }
@@ -753,6 +888,15 @@ public class CCal {
         boolean bSingle = argResult.bSingle;
         int nEncoding = argResult.nEncoding;
 
+        // The CLI encoding must also apply when stdout is redirected on Windows.
+        String charset = nEncoding == 'g' ? "GB2312" : nEncoding == 'b' ? "Big5" : "UTF-8";
+        System.out.flush();
+        try {
+            System.setOut(new PrintStream(System.out, true, charset));
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException("Required calendar output encoding is unavailable: " + charset, e);
+        }
+
         if (month < 1 || month > 12) {
             System.err.println("ccal: Invalid month value: month 1-12.");
             System.exit(1);
@@ -762,8 +906,7 @@ public class CCal {
             System.exit(1);
         }
 
-        if (isLeapYear(year))
-            daysInMonth[1] = 29;
+        daysInMonth[1] = isLeapYear(year) ? 29 : 28;
 
         // Compute lunar year data
         LunarYear.LunarYearResult lunar = LunarYear.lunaryear(year);
@@ -787,7 +930,7 @@ public class CCal {
         if (bSingle) {
             titlestr = String.format("%s %d", MONTH_NAMES[month - 1], year);
             if (pmode == 1)
-                HtmlMonth.printHeaderHTML(titlestr, month, year);
+                HtmlMonth.printHeaderHTML(titlestr, month, year, nEncoding);
             else if (pmode == 2)
                 PSMonth.printHeaderPS(titlestr, bIsSim, false);
 
@@ -797,7 +940,7 @@ public class CCal {
         } else {
             titlestr = String.format("Year %d", year);
             if (pmode == 1)
-                HtmlMonth.printHeaderHTML(titlestr, 0, year);
+                HtmlMonth.printHeaderHTML(titlestr, 0, year, nEncoding);
             else if (pmode == 2)
                 PSMonth.printHeaderPS(titlestr, bIsSim, (lmon != 0.0));
 

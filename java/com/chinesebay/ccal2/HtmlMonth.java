@@ -152,10 +152,15 @@ public class HtmlMonth {
      * @param year Gregorian year number
      */
     public static void printHeaderHTML(String titlestr, int month, int year) {
+        printHeaderHTML(titlestr, month, year, 'u');
+    }
+
+    public static void printHeaderHTML(String titlestr, int month, int year, int encoding) {
         System.out.println("<html>");
         System.out.println("<head>");
-        System.out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\">");
-        System.out.println("<meta name=\"GENERATOR\" content=\"ccal-java by Zhuo Meng\">");
+        String charset = encoding == 'g' ? "gb2312" : encoding == 'b' ? "big5" : "utf-8";
+        System.out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
+        System.out.println("<meta name=\"GENERATOR\" content=\"ccal-2.5.3 by Zhuo Meng, http://thunder.cwru.edu/ccal/\">");
 
         if (month != 0)
             System.out.println("<title>Chinese Calendar for " + titlestr + " / " + year + miscchar[16] + month + miscchar[14] + "</title>");
