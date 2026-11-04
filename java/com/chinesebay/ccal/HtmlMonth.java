@@ -4,39 +4,13 @@ import static com.chinesebay.ccal.CcalData.*;
 
 public class HtmlMonth {
     public static void SetU8Characters(boolean bIsSim) {
-        if (bIsSim) {
-            // C++: strncpy(&(U8jieqi[4][0]), U8DiffSim[0], 3); & strncpy(&(U8jieqi[4][3]), U8DiffSim[1], 3);
-            // Result: U8jieqi[4] becomes U8DiffSim[0] + U8DiffSim[1]
-            CcalData.U8jieqi[4][0] = CcalData.U8DiffSim[0][0] + CcalData.U8DiffSim[1][0];
-
-            // C++: strncpy(&(U8jieqi[7][0]), U8DiffSim[2], 3);
-            // Result: U8jieqi[7] becomes U8DiffSim[2]
-            CcalData.U8jieqi[7][0] = CcalData.U8DiffSim[2][0];
-
-            // C++: strncpy(&(U8jieqi[9][3]), U8DiffSim[3], 3);
-            // Result: U8jieqi[9]'s second char replaced by U8DiffSim[3]
-            CcalData.U8jieqi[9][0] = CcalData.U8jieqi[9][0].substring(0, 1) + CcalData.U8DiffSim[3][0];
-
-            // C++: strncpy(&(U8jieqi[10][3]), U8DiffSim[4], 3);
-            // Result: U8jieqi[10]'s second char replaced by U8DiffSim[4]
-            CcalData.U8jieqi[10][0] = CcalData.U8jieqi[10][0].substring(0, 1) + CcalData.U8DiffSim[4][0];
-
-            // C++: strncpy(&(U8jieqi[15][0]), U8DiffSim[5], 3);
-            // Result: U8jieqi[15] becomes U8DiffSim[5]
-            CcalData.U8jieqi[15][0] = CcalData.U8DiffSim[5][0];
-
-            // C++: strncpy(&(U8miscchar[13][0]), U8DiffSim[6], 3);
-            // Result: U8miscchar[13] becomes U8DiffSim[6]
-            CcalData.U8miscchar[13][0] = CcalData.U8DiffSim[6][0];
-        } else {
-            // Corresponding changes for U8DiffTra
-            CcalData.U8jieqi[4][0] = CcalData.U8DiffTra[0][0] + CcalData.U8DiffTra[1][0];
-            CcalData.U8jieqi[7][0] = CcalData.U8DiffTra[2][0];
-            CcalData.U8jieqi[9][0] = CcalData.U8jieqi[9][0].substring(0, 1) + CcalData.U8DiffTra[3][0];
-            CcalData.U8jieqi[10][0] = CcalData.U8jieqi[10][0].substring(0, 1) + CcalData.U8DiffTra[4][0];
-            CcalData.U8jieqi[15][0] = CcalData.U8DiffTra[5][0];
-            CcalData.U8miscchar[13][0] = CcalData.U8DiffTra[6][0];
-        }
+        String[][] diff = bIsSim ? U8DiffSim : U8DiffTra;
+        U8jieqi[4][0] = diff[0][0] + diff[1][0];
+        U8jieqi[7][0] = diff[2][0] + "\u96e8";
+        U8jieqi[9][0] = "\u5c0f" + diff[3][0];
+        U8jieqi[10][0] = "\u8292" + diff[4][0];
+        U8jieqi[15][0] = diff[5][0] + "\u6691";
+        U8miscchar[13][0] = diff[6][0];
     }
 
     public static void Number2MonthCH(double month, int nstart, int ndays, int nEncoding, char[] monname) {
@@ -71,6 +45,7 @@ public class HtmlMonth {
 
         String result = sb.toString();
         result.getChars(0, result.length(), monname, 0);
+        monname[result.length()] = 0;
     }
 
     public static void Number2DayCH(int nday, int nEncoding, char[] dayname) {
@@ -105,6 +80,7 @@ public class HtmlMonth {
 
         String result = sb.toString();
         result.getChars(0, result.length(), dayname, 0);
+        dayname[result.length()] = 0;
     }
 
     public static void PrintHeaderHTML(String titlestr, int month, int year, int nEncoding) {
@@ -128,7 +104,7 @@ public class HtmlMonth {
         else
             System.out.printf("<title>Chinese Calendar for %s / %d%s</title>\n", titlestr, year, miscchar[16][0]);
         System.out.print("</head>\n<body>\n<center>\n");
-        System.out.print("<table border=\"1\" cellspacing=\"1\" width=\"90%%\">\n");
+        System.out.print("<table border=\"1\" cellspacing=\"1\" width=\"90%\">\n");
     }
 
     public static void PrintClosingHTML() {

@@ -1,7 +1,5 @@
 package com.chinesebay.ccal3;
 
-import java.nio.charset.StandardCharsets;
-
 public class MiscData {
 
     // Direct translation of the U8 (UTF-8) arrays from htmlmonth.cpp
@@ -10,7 +8,7 @@ public class MiscData {
             "\u5927\u5bd2", /* DH - Greater Cold */
             "\u7acb\u6625", /* LC - Start of Spring */
             "\u96e8\u6c34", /* YS - Rain Water */
-            "\u60ca\u86db", /* JZ - Awakening of Insects */
+            "\u60ca\u86f0", /* JZ - Awakening of Insects */
             "\u6625\u5206", /* CF - Spring Equinox */
             "\u6e05\u660e", /* QM - Clear and Bright */
             "\u8c37\u96e8", /* GY - Grain Rain */
@@ -69,6 +67,49 @@ public class MiscData {
             "\u7533", "\u9149", "\u620c", "\u4ea5"
     };
 
+    private static final String[] B5_JIEQI = U8_JIEQI.clone();
+    private static final String[] B5_MISC_CHAR = U8_MISC_CHAR.clone();
+    private static final String[] GB_MISC_CHAR = U8_MISC_CHAR.clone();
+    private static boolean simplified = true;
+
+    static {
+        // Character differences in the Big5 and UTF-8 tables in htmlmonth.cpp.
+        B5_JIEQI[4] = "\u9a5a\u87c4";
+        B5_JIEQI[7] = "\u7a40\u96e8";
+        B5_JIEQI[9] = "\u5c0f\u6eff";
+        B5_JIEQI[10] = "\u8292\u7a2e";
+        B5_JIEQI[15] = "\u8655\u6691";
+        B5_MISC_CHAR[13] = "\u958f";
+        B5_MISC_CHAR[20] = "\u3000";
+        GB_MISC_CHAR[20] = "\u3000";
+    }
+
+    public static void setSimplified(boolean value) {
+        simplified = value;
+    }
+
+    private static boolean traditional(int encoding) {
+        return encoding == 'b' || (encoding == 'u' && !simplified);
+    }
+
+    public static String[] getTianGanArray(int encoding) {
+        return U8_TIAN_GAN;
+    }
+
+    public static String[] getDiZhiArray(int encoding) {
+        return U8_DI_ZHI;
+    }
+
+    public static String[] getJieQiArray(int encoding) {
+        return traditional(encoding) ? B5_JIEQI : U8_JIEQI;
+    }
+
+    public static String[] getMiscCharArray(int encoding) {
+        if (encoding == 'g')
+            return GB_MISC_CHAR;
+        return traditional(encoding) ? B5_MISC_CHAR : U8_MISC_CHAR;
+    }
+
     /**
      * Corresponds to Number2MonthCH in htmlmonth.cpp
      *
@@ -79,8 +120,7 @@ public class MiscData {
      * @return C string containing the Chinese characters for the month.
      */
     public static String numberToMonthCH(double month, int nstart, int ndays, int nEncoding) {
-        // For this conversion, we will ignore nEncoding and use UTF-8 data
-        String[] miscchar = U8_MISC_CHAR;
+        String[] miscchar = getMiscCharArray(nEncoding);
         StringBuilder monname = new StringBuilder();
 
         int nmonth = (int) month;
@@ -117,8 +157,7 @@ public class MiscData {
      * @return C string containing the Chinese characters for the day.
      */
     public static String numberToDayCH(int nday, int nEncoding) {
-        // For this conversion, we will ignore nEncoding and use UTF-8 data
-        String[] miscchar = U8_MISC_CHAR;
+        String[] miscchar = getMiscCharArray(nEncoding);
         StringBuilder dayname = new StringBuilder();
 
         if (nday <= 10) {
@@ -142,5 +181,30 @@ public class MiscData {
         }
         dayname.append(miscchar[nday]);
         return dayname.toString();
+    }
+
+    static String number2MonthCH(double month, int start, int days) {
+        return numberToMonthCH(month, start, days, 'u');
+    }
+
+    static String number2DayCH(int day) {
+        return numberToDayCH(day, 'u');
+    }
+
+    static void printHeaderHTML(String title, int month, int year, int encoding) {
+        String[] miscchar = getMiscCharArray(encoding);
+        String charset = encoding == 'g' ? "gb2312" : encoding == 'b' ? "big5" : "utf-8";
+        System.out.println("<html>\n<head>");
+        System.out.println("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=" + charset + "\">");
+        System.out.println("<meta name=\"GENERATOR\" content=\"ccal-2.5.3 by Zhuo Meng, http://thunder.cwru.edu/ccal/\">");
+        System.out.printf("<title>Chinese Calendar for %s / %d%s", title, year, miscchar[16]);
+        if (month != 0)
+            System.out.printf("%d%s", month, miscchar[14]);
+        System.out.println("</title>\n</head>\n<body>\n<center>");
+        System.out.println("<table border=\"1\" cellspacing=\"1\" width=\"90%\">");
+    }
+
+    static void printClosingHTML() {
+        System.out.println("</table>\n</center>\n</body>\n</html>");
     }
 }

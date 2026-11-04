@@ -14,8 +14,11 @@ import java.util.concurrent.TimeUnit;
  * Compares the Java CLI with the original, runnable C++ executable.
  * Uses only the JDK. Run from the repository root after compiling ccal2 and
  * this class into the same output directory:
- * java -cp <classes> com.chinesebay.ccal2.NativeComparisonTest [--full]
+ * java -cp <classes> com.chinesebay.ccal2.NativeComparisonTest [--full] [--ccal|--ccal3|--ccal4]
  * --full also compares every ASCII annual calendar from 1900 through 2100.
+ * --ccal selects com.chinesebay.ccal.Ccal instead of ccal2.
+ * --ccal3 selects com.chinesebay.ccal3.Ccal instead of ccal2.
+ * --ccal4 selects com.chinesebay.ccal4.CalendarMain instead of ccal2.
  */
 public final class NativeComparisonTest {
     private static final int[] HEADER_YEARS = {
@@ -26,9 +29,18 @@ public final class NativeComparisonTest {
     }
 
     public static void main(String[] args) throws Exception {
-        boolean full = args.length == 1 && "--full".equals(args[0]);
-        if (args.length > 0 && !full)
-            throw new IllegalArgumentException("Usage: NativeComparisonTest [--full]");
+        boolean full = Arrays.asList(args).contains("--full");
+        boolean original = Arrays.asList(args).contains("--ccal");
+        boolean third = Arrays.asList(args).contains("--ccal3");
+        boolean fourth = Arrays.asList(args).contains("--ccal4");
+        for (String arg : args)
+            if (!"--full".equals(arg) && !"--ccal".equals(arg) && !"--ccal3".equals(arg)
+                    && !"--ccal4".equals(arg))
+                throw new IllegalArgumentException("Usage: NativeComparisonTest [--full] [--ccal|--ccal3|--ccal4]");
+        if ((original ? 1 : 0) + (third ? 1 : 0) + (fourth ? 1 : 0) > 1)
+            throw new IllegalArgumentException("Select only one implementation");
+        String mainClass = fourth ? "com.chinesebay.ccal4.CalendarMain" : third ? "com.chinesebay.ccal3.Ccal"
+            : original ? "com.chinesebay.ccal.Ccal" : CCal.class.getName();
         Path executable = Paths.get("ccal.exe").toAbsolutePath();
         if (!Files.isRegularFile(executable))
             throw new IllegalStateException("Run from the repository root containing ccal.exe");
@@ -57,6 +69,11 @@ public final class NativeComparisonTest {
                 cases.add(concat(format, month));
             cases.add(concat(format, new String[] {"2033"}));
         }
+        if (original || third || fourth) {
+            cases.add(new String[0]);
+            if (!full)
+                cases.add(new String[] {"2100"});
+        }
 
         Path temporary = Files.createTempDirectory("ccal2-native-regression-");
         int failures = 0;
@@ -69,7 +86,7 @@ public final class NativeComparisonTest {
                 javaCommand.add(Paths.get(System.getProperty("java.home"), "bin", "java.exe").toString());
                 javaCommand.add("-cp");
                 javaCommand.add(System.getProperty("java.class.path"));
-                javaCommand.add(CCal.class.getName());
+                javaCommand.add(mainClass);
                 javaCommand.addAll(Arrays.asList(calendarArgs));
 
                 Result nativeResult = run(nativeCommand, temporary);
@@ -96,7 +113,8 @@ public final class NativeComparisonTest {
             Files.deleteIfExists(temporary.resolve("stderr"));
             Files.delete(temporary);
         }
-        System.out.println((cases.size() - failures) + "/" + cases.size() + " native comparisons passed.");
+        System.out.println(mainClass + ": " + (cases.size() - failures) + "/" + cases.size()
+            + " native comparisons passed.");
         if (failures != 0)
             throw new AssertionError(failures + " comparisons failed");
     }

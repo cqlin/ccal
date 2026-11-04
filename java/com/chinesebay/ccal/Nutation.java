@@ -11,9 +11,7 @@ public class Nutation {
 	 * This function returns the nutation in longitude (delta_psi)
 	 * and obliquity (delta_epsilon) for a given Julian date.
 	 *
-	 * References:
-	 * - Explanatory Supplement to the Astronomical Almanac, 1992, pages 111-114.
-	 * - Jean Meeus, Astronomical Algorithms, 2nd Edition, 1998, Chapter 22.
+	 * Uses IAU 2000A, as selected by nutation_angles in novas.cpp.
 	 *
 	 * Input:
 	 *   t          = Julian date as a Terrestrial Dynamical Time (TDT) argument,
@@ -25,16 +23,15 @@ public class Nutation {
 	 */
 	public static void nutation(double t, MutableDouble deltapsi, MutableDouble deltaepsilon) {
 		//iau2000a
-		double t1;
-		t1 = t * 36525.0;
+		double t1 = t * 36525.0;
 		NutationData data = com.chinesebay.ccal3.Nutation.iau2000a(Novascon.T0, t1);
-		//deltapsi.value = data.dpsi;
-		//deltaepsilon.value = data.deps;
+		deltapsi.value = data.dpsi;
+		deltaepsilon.value = data.deps;
 
 		//iau1980
 		double DegToRad = 3.14159265358979323846 / 180;
-		deltapsi.value = delta_psi(t)*DegToRad;
-		deltaepsilon.value = delta_epsilon(t)*DegToRad;
+		//deltapsi.value = delta_psi(t)*DegToRad;
+		//deltaepsilon.value = delta_epsilon(t)*DegToRad;
 		//System.out.printf("%f,psi2000=%.16f,epsilon2000=%.16f,psi1980=%.16f,epsilon1980=%.16f\n",t1,data.dpsi,data.deps,deltapsi.value,deltaepsilon.value);
 	}
 

@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 /** Command-line entry point for the plain-Java ccal conversion. */
 public final class CalendarMain {
-    public static final String VERSION = "2.5.3-java";
+    public static final String VERSION = "2.5.3";
 
     private CalendarMain() {
     }
@@ -22,8 +22,10 @@ public final class CalendarMain {
             writer.print(output);
             writer.flush();
         } catch (CliOptions.UsageException exception) {
-            System.err.println(exception.getMessage());
-            printUsage(System.err);
+            if (exception.getMessage() != null)
+                System.out.println(exception.getMessage());
+            if (exception.showUsage)
+                printUsage(System.out);
             System.exit(1);
         } catch (RuntimeException exception) {
             System.err.println("ccal: " + exception.getMessage());
@@ -48,7 +50,7 @@ public final class CalendarMain {
         stream.println("ccal version " + VERSION + ": Displays Chinese calendar (Gregorian with Chinese dates).");
         stream.println("Usage: ccal [-t|-p|-x] [-g|-b] [-u] [[<month>] <year>].");
         stream.println("\t-t:\tGenerates HTML table output.");
-        stream.println("\t-p:\tGenerates Encapsulated PostScript output.");
+        stream.println("\t-p:\tGenerates encapsulated PostScript output.");
         stream.println("\t-x:\tGenerates XML output.");
         stream.println("\t-g:\tGenerates simplified Chinese output.");
         stream.println("\t-b:\tGenerates traditional Chinese output.");

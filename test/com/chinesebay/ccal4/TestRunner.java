@@ -24,6 +24,12 @@ public final class TestRunner {
                 LunarYearTest.run();
             }
         });
+        run("AstronomyTest", new Runnable() {
+            @Override
+            public void run() {
+                AstronomyTest.run();
+            }
+        });
         run("RendererAndCliTest", new Runnable() {
             @Override
             public void run() {

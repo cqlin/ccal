@@ -1184,7 +1184,7 @@ public class YearCache {
 
     	   vterms.clear();
 
-    	   while (allterms[termidx] < tend) {
+		while (termidx < allterms.length && allterms[termidx] < tend) {
     		   vterms.add((double)allterms[termidx] + jdbase);
     		   termidx++;
     	   }

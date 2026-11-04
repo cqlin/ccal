@@ -21,7 +21,7 @@ import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import com.chinesebay.ccal.Verstr;
+import java.util.Locale;
 
 /* For calendar in Encapsulated Postscript form with PS characters */
 public final class PSMonth {
@@ -57,7 +57,7 @@ public final class PSMonth {
 	 * @param monname
 	 */
 	public static void Number2MonthPS(double month, int nstart, int ndays, boolean bYear, StringBuilder monname) {
-		monname.setLength(0);; /* Clear */
+		monname.setLength(0); /* Clear */
 		int nmonth = (int) (month);
 		if (month - nmonth == 0.5) /* Leap month */
 			monname.append((bYear) ? PSmiscchar[13] : PSbigmchar[13]);
@@ -90,7 +90,7 @@ public final class PSMonth {
 	 * @param dayname
 	 */
 	public static void Number2DayPS(int nday, StringBuilder dayname) {
-		dayname.setLength(0);; /* Clear */
+		dayname.setLength(0); /* Clear */
 		if (nday <= 10)
 			dayname.append(PSmiscchar[0]);
 		if (nday > 10 && nday < 20) {
@@ -125,14 +125,17 @@ public final class PSMonth {
 	 */
 	public static void PrintHeaderPS(PrintWriter out, String titlestr, boolean bIsSim, boolean bNeedsRun) {
 		boolean bYear = false;
-		if (titlestr.startsWith("Year")) {
+		if (titlestr.startsWith("Year"))
 			bYear = true;
-		}
-
-		out.printf("%%!PS-Adobe-3.0 EPSF-3.0\n%%%%Title: Chinese Calendar for %s\n", titlestr);
-		out.printf("%%%%Creator: ccal-%s by Zhuo Meng, http://thunder.cwru.edu/ccal/\n", Verstr.versionstr);
-		String formattedDate = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy").format(new Date());
-		out.printf("%%%%CreationDate: %s\n", formattedDate);
+		out.printf(Locale.ROOT, "%%!PS-Adobe-3.0 EPSF-3.0\n%%%%Title: Chinese Calendar for %s\n",
+			   titlestr);
+		out.printf(Locale.ROOT, "%%%%Creator: ccal-%s by Zhuo Meng, http://thunder.cwru.edu/ccal/\n", "2.5.3");
+		// Match ctime: English names and a space-padded day of month.
+		Date now = new Date();
+		out.printf(Locale.ROOT, "%%%%CreationDate: %s %2d %s\n",
+			   new SimpleDateFormat("EEE MMM", Locale.US).format(now),
+			   Integer.parseInt(new SimpleDateFormat("d", Locale.US).format(now)),
+			   new SimpleDateFormat("HH:mm:ss yyyy", Locale.US).format(now));
 		if (bYear) {
 			out.print("%%BoundingBox: 24 297 583 738\n");
 			out.print("%%DocumentNeededResources: font Times-Bold Bookman-Light\n");
@@ -146,9 +149,9 @@ public final class PSMonth {
 		out.print("/B {bind def} def\n/dpif {72 600 div} B\n");
 		out.print("/xdf {exch def} B\n");
 		out.print("/m {dpif mul exch dpif mul exch moveto} B\n");
-		if (bYear) {
+		if (bYear)
 			out.print("/SF {/b xdf /s xdf b 0 gt {/Times-Bold}{/Bookman-Light} ifelse\n");
-		} else {
+		else {
 			out.print("/SFC {/s xdf /Times-Bold findfont s scalefont setfont} def\n");
 			out.print("/SC {100 128 rmoveto show 0 -128 rmoveto} def\n");
 			out.print("/SF {/b xdf /s xdf b 0 gt {/Times-Bold}{/Bookman-Demi} ifelse\n");
@@ -170,7 +173,7 @@ public final class PSMonth {
 			out.print("gsave newpath x y m currentpoint translate\n");
 			out.print("newpath rpts 0 moveto w ppts 4 sub rpts sub dup dup 0 lineto rpts rpts -90 0 arc\n");
 			out.print("w ppts 4 sub h ppts 4 sub rpts sub lineto currentpoint exch pop rpts 0 90 arc\n");
-			out.print("rpts h ppts 4 sub lineto rpts rpts rpts 90 180 arc\n");
+			out.print("rpts h ppts 4 sub lineto rpts h ppts 4 sub rpts sub rpts 90 180 arc\n");
 			out.print("0 rpts lineto rpts rpts rpts 180 270 arc closepath} def\n");
 			out.print("/Fcolor {1 0.9 1 K} B\n");
 			out.print("/F {RR Fcolor fill grestore} def\n");
@@ -260,7 +263,7 @@ public final class PSMonth {
 		}
 		if (bYear) {
 			PrintHeaderMonthPS(out, null, (short) 0, false, bIsSim, bNeedsRun, 6);
-			out.printf("gsave 30 300 moveto currentpoint translate\n");
+			out.print("gsave 30 300 moveto currentpoint translate\n");
 			out.print("% Grid lines\ngsave 0.9 0.9 1 K 3 ppts setlinewidth\n");
 			out.print("newpath 0 2236 m 546 0 rlineto stroke\n");
 			out.print("newpath 0 1086 m 546 0 rlineto stroke\n");
@@ -268,26 +271,24 @@ public final class PSMonth {
 			out.print("newpath 272 399 moveto 0 -398 rlineto stroke\n");
 			out.print("newpath 412 399 moveto 0 -398 rlineto stroke\n");
 			out.print("grestore\n");
-			out.print("% Year heading\n28 1 SF\n");
-			out.printf("2030 3450 m (%s) S\n", titlestr.substring(5)); // Assumes "Year XXXX" format
+			out.printf(Locale.ROOT, "%% Year heading\n28 1 SF\n2030 3450 m (%s) S\n", titlestr.substring(5));
 		}
 	}
 
 	/* Inputs:
 	   monthhead, string header for the monthly calendar if bSingle is
-	              true, don't care otherwise
+				  true, don't care otherwise
 	   month, month number for the monthly calendar if bSingle is
-	          true, don't care otherwise
+			  true, don't care otherwise
 	   bSingle, true for single month, false for whole year
 	   bIsSim, true for simplified characters, false for traditional characters
 	   bNeedsRun: true if character Run is needed, false otherwise
 	   nWeeks: number of week lines in month
-	 */
+	*/
 	public static void PrintHeaderMonthPS(PrintWriter out, String monthhead, short month, boolean bSingle,
-			boolean bIsSim, boolean bNeedsRun, int nWeeks) {
-		if (!bSingle || monthhead!=null && monthhead.contains("m12 ") ||
-				month == 2 || month == 3)
-		{
+							boolean bIsSim, boolean bNeedsRun, int nWeeks) {
+		if (!bSingle || monthhead.contains("m12 ") ||
+			month == 2 || month == 3) {
 			out.print("/m02 {{<~Pop&tz\"Q0F@!9aJ(!9aE!!'gO#!+5e#!-eKC!0R=a!3cH*\"3^aI\"+1*U\"$?R\"![Ib^\n");
 			out.print("![Ig1\")n;)\"\"445!qZNk![IgE![Ik1\"0;Se\"'bqq!uqD>!.4lF!1X-F!42hf!6t[/!:0eM!UKnN\n");
 			out.print("!UKf&!?_AY!?_G'!C-]_!9=3/!9O>X!9aJ:!9aJ(~>\n");
@@ -295,21 +296,17 @@ public final class PSMonth {
 			if (bSingle)
 				out.print("/m12 {gsave 1 1 nR {m02 NNC bf} for grestore WNC} B\n");
 		}
-		if (bNeedsRun)
-		{
-			if (bIsSim)
-			{
+		if (bNeedsRun) {
+			if (bIsSim) {
 				out.print("/m03 {{<~Pop(2z\"Q0F@!;lo>!?;0>!Ajk^!DW^'!GhhE!TX<h!TX:^!@.^H!CQtH!F,Zh!HnM1\n");
-				out.print("!L*WO!TX:J!TX8$!8%%;l!;HQl!>#87!@e*U!D!4s\"$?Si!q64e!k\\OR!ZV4\\!ZV7-!rrAg!l+jg\n");
+				out.print("!L*WO!TX:J!TX8$!8%;l!;HQl!>#87!@e*U!D!4s\"$?Si!q64e!k\\OR!ZV4\\!ZV7-!rrAg!l+jg\n");
 				out.print("!g!H`!ZV7A!ZV9K!uqBL!n[SL!iQ1A!;lo>!6bPh!5J]P!9sZD!<rX3!>GVq!?hOX!AFTc!C?l>\n");
 				out.print("!E0(l!E9/1!Cd07!B1+<!=f4/!6bPh!-eJt!4W#&!4W+.!8IYj!-eT:!.\"_f!.4j=!.4gg!.4e;\n");
 				out.print("!.\"W[!-eJt!K[D*!O)Z*!QY@J!TF2h!WW=1\"&&f)\"&&]n\"&&]V\"$lp?\"\"XG,!u:ll!q62K!k85p\n");
 				out.print("!k85`!qcP8!uq;A\"\"XF'\"&&\\Q\"(M=!\"*+B@\"+UA^\",Hr%\",Hr=\",I%M\"/l<4\")%e0\"$cs1!K[D*\n");
 				out.print("~>\n");
 				out.print("<~!!*0*,Qe2q!sL:Z!<XSN!@.ak\"T\\]/+p0\"m\"![sq!t#~>}U NC} B\n");
-			}
-			else
-			{
+			} else {
 				out.print("/m03 {{<~Pop(Zz\"Q0F@!@.^h!CQth!F,[3!HnMQ!L*Wo!TX:j!TX9G!CQsQ!Fu4Q!IOoq!L<b:\n");
 				out.print("!OMlX!TX93!TX7M!<<,h!?_Bh!B:)3!E&pQ!H8%o!tYIf!n75f!iuCk!Z1q,!Z1rg!lP+i!fR/i\n");
 				out.print("!b_V!!Z1s&!Z1tI!pfss!jD_s!fR1'!@.^h!/(=t!5JS&!5JZ+!It6A!It5r!Or2m!OW!?!OMq5\n");
@@ -320,11 +317,10 @@ public final class PSMonth {
 				out.print("!5J[J!It7`!It6U!5JZ?!5J[J~>\n");
 				out.print("<~!!*0*,Qe2q!sL:Z!@7gO,m,=p!@.aJ,Qe&m\"!RmN,6]Cr+p@um!s'YL$3~>}U NC} B\n");
 			}
-			if (bSingle && monthhead!=null && monthhead.contains("m13 ") )
+			if (bSingle && monthhead.contains("m13 "))
 				out.print("/m13 {gsave 1 1 nR {m03 NNC bf} for grestore WNC} B\n");
 		}
-		if (bSingle)
-		{
+		if (bSingle) {
 			out.print("/m14 {gsave 1 1 nR {m04 NNC bf} for grestore WNC} B\n");
 			out.print("/m15 {gsave 1 1 nR {m05 NNC bf} for grestore WNC} B\n");
 			out.print("/m06 {{<~Pop'Sz\"Q0F@!>kl#!X&Qe!X&O;!>kiN!>kl#!@S'\"!;Ze0!6bNX!1X,A!,M_*!(I$,\n");
@@ -335,33 +331,29 @@ public final class PSMonth {
 			out.print("<~!!+>I!?q[L+pB4o\"X4$P+p.uN\"YTr]+p//~>}U NC} B\n");
 			out.print("/m16 {gsave 1 1 nR {m06 NNC bf} for grestore WNC} B\n");
 		}
-		if (!bSingle || monthhead!=null && monthhead.contains("m17 ") || month == 1 ||
-				month == 7 || month == 12)
-		{
+		if (!bSingle || monthhead.contains("m17 ") || month == 1 ||
+			month == 7 || month == 12) {
 			out.print("/m07 {{<~Pop';z\"Q0F@!Rq1\\!'gUq!+5kq!/(EL!Rq1H!R:a<!P\\[-!N#mn!K7%Y!FPp;!?_Bh\n");
 			out.print("!8mj?!0I7h!&O[8!&ss,!4i/.!?qN)!H8%q!PJLb!Up,d!XJiu![7[)!`/oK!g!F.!mgqe!uq;h\n");
 			out.print("\"*=N6\",6eh\"/GpB\"3^am\"3^b(\"&&]t!pBXT!ho]r!a>]:!\\+6l!Y>E`!Y>F/\"4.+F\",$aF\"&&d+\n");
 			out.print("!Y>FC!Y>Hi!\\a_T!RLqu!R_(G!Rq3?!Rq1\\~>\n");
 			out.print("<~!!+>I,6\\/q\"ToqP-j'V[~>}U NC} B\n");
-			if (bSingle && monthhead!=null && monthhead.contains("m17 "))
+			if (bSingle && monthhead.contains("m17 "))
 				out.print("/m17 {gsave 1 1 nR {m07 NNC bf} for grestore WNC} B\n");
 		}
-		if (!bSingle || monthhead!=null && monthhead.contains("m18 ") || month == 1 ||
-				month == 5 || month == 7 || month == 11)
-		{
+		if (!bSingle || monthhead.contains("m18 ") || month == 1 ||
+			month == 5 || month == 7 || month == 11) {
 			out.print("/m08 {{<~Pop'Wz\"Q0F@!UKmo!UKg1!UKf`!T*mA!QG,*!NZ9f!J(6@!CQp`!CQpP!LWq8!QG+B\n");
 			out.print("!R(Np!Xo&m!\\+1d![n&U![n/$!_`]h!U'X0!U9cW!UKnl!UKmo!Ajkr!A\";J!?M;i!=Am%!;6I6\n");
 			out.print("!87J=!4Dp:!0RA7!,Va:!([,E!*B7I!1a-s!7V%:!<*#I!@IpV!CQuG!E9+q!Fu7E!HnNi!K7)5\n");
 			out.print("!Ajkr!gj&%!fR2b!m(LY!r)gK!uM(6\"#p=u\"&K#[\"(2.=\")n8s\"+UD#\"-N[O\"/>m$\"0)BF\"/Z*`\n");
 			out.print("\"/5h$\"-!?3\")%`9\"%!&=!rW17!gj&%~>\n");
 			out.print("<~!!*0G\"ToqP,6J)M,6\\/o\"Tnc--3X_~>}U NC} B\n");
-			if (bSingle && monthhead!=null && monthhead.contains("m18 "))
+			if (bSingle && monthhead.contains("m18 "))
 				out.print("/m18 {gsave 1 1 nR {m08 NNC bf} for grestore WNC} B\n");
 		}
-		if (bSingle)
-		{
-			if (monthhead!=null && monthhead.contains("m19 "))
-			{
+		if (bSingle) {
+			if (monthhead.contains("m19 ")) {
 				out.print("/m09 {{<~Pop'%z\"Q0F@!8ISH!5nm0!3uV\"!2onu!1a,r!1!Wu!0R@*!0.(3!0%\"?!0@4N!0R@\\\n");
 				out.print("!1X'r!3?39!5&>U!71al!9aH*!<<.<!>#9?!>ki2!?_D$!?M7\\!>GP1!=8bY!;6E&!87FA!58G[\n");
 				out.print("!2T[1!0@1o!.\"WV!-eKY!/LVu!13b<!2fgZ!4Dm'!5nlG!7:eo!8ISH~>\n");
@@ -386,16 +378,15 @@ public final class PSMonth {
 			out.print("/n14 {gsave 1 1 nR {n04 NNC bf} for grestore WNC} B\n");
 			out.print("/n15 {gsave 1 1 nR {n05 NNC bf} for grestore WNC} B\n");
 			out.print("/n16 {gsave 1 1 nR {n06 NNC bf} for grestore WNC} B\n");
-			if (monthhead!=null && monthhead.contains("n17 "))
+			if (monthhead.contains("n17 "))
 				out.print("/n17 {gsave 1 1 nR {n07 NNC bf} for grestore WNC} B\n");
-			if (monthhead!=null && monthhead.contains("n18 "))
+			if (monthhead.contains("n18 "))
 				out.print("/n18 {gsave 1 1 nR {n08 NNC bf} for grestore WNC} B\n");
-			if (monthhead!=null && monthhead.contains("n19 "))
+			if (monthhead.contains("n19 "))
 				out.print("/n19 {gsave 1 1 nR {n09 NNC bf} for grestore WNC} B\n");
-			if (monthhead!=null && monthhead.contains("n1a "))
+			if (monthhead.contains("n1a "))
 				out.print("/n1a {gsave 1 1 nR {n0a NNC bf} for grestore WNC} B\n");
-			if (monthhead!=null && monthhead.contains("t00 "))
-			{
+			if (monthhead.contains("t00 ")) {
 				out.print("/t00i {{<~Pop';z\"Q0F@![%NR\"!doW\"!dnd\"(2.g\"'P`<\"'>V&\"'>Y%\",I%m\"%WNm\"!dtr!:0f8\n");
 				out.print("!3cQu!3u\\l!42ga!42fT!42eF!3uX6!3cK'!9aH*!9aHn!UKis!UKi3!U9[Y!U'M?![IbB![.Pl\n");
 				out.print("![%L9![%NR!9aMq!UKo!!UKlX!9aKS!9aMq![%SU\"!dtZ\"!dr<![%Q7![%SU!9aK?!UKlD!UKj2\n");
@@ -403,8 +394,7 @@ public final class PSMonth {
 				out.print("<~!!+;H\"XO6p\"X=*Q!sJ]N!s'YL!@.aJ,QeA~>}U NC} B\n");
 				out.print("/t00 {gsave 1 1 nR {t00i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t01 "))
-			{
+			if (monthhead.contains("t01 ")) {
 				out.print("/t01i {{<~Pop';z\"Q0F@!0dRn!42hn!6bO9!9OAW!<`Ku!al+(!GDO&!8%=B!3uW)!/gjd!/(@(\n");
 				out.print("!1j2!!4Mrm!8RX.!>#6a\"\"XG*\")\\*n\".T@_\"1/'P\"-rr:\",$[>\"+C7\\\"*Xc$\"*+ES\")n:B\"'>T*\n");
 				out.print("\"'#@n\"&K\")\"%iR[\"%*(6\"\"jSe!t51>!@RrX!;uo-!9+!r!7h/(!6P<2!87Gn!<rR2!AX\\J!J1@Q\n");
@@ -412,8 +402,7 @@ public final class PSMonth {
 				out.print("<~!!*0*\"![sO,6\\/n\"Tp\"R,6J8~>}U NC} B\n");
 				out.print("/t01 {gsave 1 1 nR {t01i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t02 "))
-			{
+			if (monthhead.contains("t02 ")) {
 				out.print("/t02i {{<~Pop'cz\"Q0F@!Z2!C\"\"XMX\"\"XG^\"\"XGF\"!R`0!tG<q!r;n]!mL_4!f-iL!f-i8!mgpp\n");
 				out.print("!rW+*!tYGh\"\"4.5\"$?QV\"&&\\u\"'bh>\"(VC^\"(VD)\"(VJ#\",m;g\"&K'g\"!drd!Z2!W!ZV;Y\"2\"_P\n");
 				out.print("\"*=XP\"$cs=!'C@6!*fV6!-A<V!0..t!3?9=!TX?!!T4$t!8IXo!13iG!1Etc!1X*M!1X(W!1X&a\n");
@@ -422,16 +411,14 @@ public final class PSMonth {
 				out.print("<~!!+8G+pA&n\"Y0ZY,Qf4o,6J)O-3X_~>}U NC} B\n");
 				out.print("/t02 {gsave 1 1 nR {t02i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t03 "))
-			{
+			if (monthhead.contains("t03 ")) {
 				out.print("/t03i {{<~Pop&hz\"Q0F@!B:(P!B:(<!Jg`)!OMi7!PACd!SdZ7!V?@\\!X8X,!Z(iO![%Jn![%K1\n");
 				out.print("![%SM\"3:RL\"*apL\"$?[)!&t(\"!*B>\"!,r$B!/^k`!2p!)!TX>f!TX6r!TX6W!S.7<!PAE\"!MKL\\\n");
 				out.print("!HeC2!B:(P~>\n");
 				out.print("<~!!*0H\"XX<T+p0\"m$3~>}U NC} B\n");
 				out.print("/t03 {gsave 1 1 nR {t03i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t04 "))
-			{
+			if (monthhead.contains("t04 ")) {
 				out.print("/t04i {{<~Pop(8z\"Q0F@\"*=O!!tG=5!keTq!e:;*!m1P'!sAYm\"\"XLQ\"'>V<!q68m!pTi<!o*iR\n");
 				out.print("!lb9[!j;Xb!fR/W!aGb:!\\OMd!Yths!Yb^g\"1SEb\"(VK^\"\"XN?!Yb_&!YGMX!Y>H6!Y>Hi!\\a_P\n");
 				out.print("!R(Ym!R:eG!R_'T!S@J?!;$?Z!3cPB!4;ls!4)_E!3-'a!2'?&!-nR4!&O[4!'C60!1!V:!6YB)\n");
@@ -442,8 +429,7 @@ public final class PSMonth {
 				out.print("<~!!+8I+p0%n,Qe2o!sKkN+pA&m\"ToqP\"!n*Q\"T\\]O\"UY~>}U NC} B\n");
 				out.print("/t04 {gsave 1 1 nR {t04i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t05 "))
-			{
+			if (monthhead.contains("t05 ")) {
 				out.print("/t05i {{<~Pop'9z\"Q0F@!4W$m!3uTi!71^_!>#6M\"&&]6\"'GVC\")S$Y\",Hr#\"/5dA\"1\\Dn\"3^bT\n");
 				out.print("\"/,_6\",[*b\",Hu.\"*=Qo\"*=Pq\")n83\")7ha\"(M>8\"&],m\"#p:V!AFML!<iJ!!:Tuu!:U!H!:U%L\n");
 				out.print("!q67N!q66_\"#'cf\"\"F@5\"\"45E\"\"47>\"%WN!!tYR!!osGs!0@:r!3cPr!6>7=!9+)[!<<4$!q6:k\n");
@@ -451,8 +437,7 @@ public final class PSMonth {
 				out.print("<~!!*6*,6\\/n\"TnoR!sKtQ\"XF0R$3~>}U NC} B\n");
 				out.print("/t05 {gsave 1 1 nR {t05i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t06 "))
-			{
+			if (monthhead.contains("t06 ")) {
 				out.print("/t06i {{<~Pop(\\z\"Q0F@!0dS)!1!^0!13i6!13h:!13g=!0RB4!/LZ!!.=ka!*fN(!$hOu!&O[(\n");
 				out.print("!-S?u!2'>R!3uVj!5ei+!6kQ4!71d.!7Cq'!7V)(!7V*1\"1/.i\")J'i\"#pBV!ZV;9!\\jdc!]^@+\n");
 				out.print("!]1\"<!\\OSK!Y#7B!RLqu!QYAe!Smj\\!UBiS!V->I!Vcb=!WE10!X&U!!8IZM!0dS)!V?Gl!=/b*\n");
@@ -464,8 +449,7 @@ public final class PSMonth {
 				out.print("<~!!+;J\"![sp\"!RmN+pB.m!@\\*S,Qe2P\"ToqP!sKnO\"Y9`Z!@.aJ,6J)V~>}U NC} B\n");
 				out.print("/t06 {gsave 1 1 nR {t06i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t07 "))
-			{
+			if (monthhead.contains("t07 ")) {
 				out.print("/t07i {{<~Pop(2z\"Q0F@!AFTU!?_I9!C?k-!E]Dl!FPtH!GDO$!I\"T!!KI4B!Mfca!O)W)!O)WC\n");
 				out.print("!O)W\\!Mfdi!KI5k!I\"Ul!E]Ee!AFTU!OMsY!NZCA!QG5@!SIR<!TX?3!U^&)!VQUl!W3$R!.Y/*\n");
 				out.print("!2'E*!4W+J!7Crh!:U(1\"+UIn\"#L*r!r)jO!Y>Gf![Rq0!\\sjO!]C-k!]gF2!\\OS;!YPU2!VQW(\n");
@@ -476,16 +460,14 @@ public final class PSMonth {
 				out.print("<~!!*0J\"T\\]L\"X4$P,Qf7p!?q[k!sKqP\"Tno1\"XsNt\"To)~>}U NC} B\n");
 				out.print("/t07 {gsave 1 1 nR {t07i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t08 "))
-			{
+			if (monthhead.contains("t08 ")) {
 				out.print("/t08i {{<~Pop''z\"Q0F@!uM-U!pB`Z!gWq?![7_[!NlN!!A4I7!2K]J!2K]6!AO[#!MKTI!V?IR\n");
 				out.print("!V?Er!)N_\"!,qu\"!/L[B!29M`!5JX)!V?E^!V?AF!/LW.!2om.!5JSN!87El!;HP5\",m5!\"$ck!\n");
 				out.print("!rr=S!\\aV-!\\aZE\"2\"[(\")n<,\"#'cZ!\\aZY!\\a^E!n%0W\"#pBt\"(24E!uM-U~>\n");
 				out.print("<~!!+8I!sKnO\"XF0R.K]hV$3~>}U NC} B\n");
 				out.print("/t08 {gsave 1 1 nR {t08i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("t09 "))
-			{
+			if (monthhead.contains("t09 ")) {
 				out.print("/t09i {{<~Pop)5z\"Q0F@!.Y.s!-eS_!2'Dd!5&BY!6tYA!8dj'!:U&2!<N=c!>>O=!=]+S!:U'N\n");
 				out.print("!7CrH!3H>8!.Y.s!]1##![%T`!]:'d!`/t0!ce@n!g<\\U!jr)J!n[QL!r;sL\"#0i\\\"+1.%\"-`iW\n");
 				out.print("\"0hn1\"4RA\\\"4RAh\"-`j5\"'u$g\"#L'W!so$E!p'K<!ltG=!r)i5\"\"XN0\"(VK.\",m<^\"&K(b\"#'fi\n");
@@ -498,8 +480,7 @@ public final class PSMonth {
 				out.print("<~!!*0I\"T\\]N\"TotQ+p0%n+p0\"m!@Isn\"TnoQ!sKkN\"ToqP\"\"+6u!sKqP\"UY~>}U NC} B\n");
 				out.print("/t09 {gsave 1 1 nR {t09i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d00 "))
-			{
+			if (monthhead.contains("d00 ")) {
 				out.print("/d00i {{<~Pop';z\"Q0F@!0@;=!3cQ=!6>7]!9+*&!<<4D!rN.B![%QS!U'U?!U9`^!UKl&!UKkA\n");
 				out.print("!&Oa2!)s\"2!,M]R!/:Op!2KZ9!UKk-!UKg-!UKf_!T3sB!QkD,!ODcj!JCH@!B^@X!B^@D!KdA)\n");
 				out.print("!PJJ2!Pe[`!X/Qe![n%X![n&9![n*i\"3^fd\")n<`\"#'d1![n+(![n+t!`T5c!\\a\\W!f-pB!mh#c\n");
@@ -507,16 +488,14 @@ public final class PSMonth {
 				out.print("<~!!*0*,6J)n!sKkN+pA&m\"XjHs\"X=*V~>}U NC} B\n");
 				out.print("/d00 {gsave 1 1 nR {d00i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d01 "))
-			{
+			if (monthhead.contains("d01 ")) {
 				out.print("/d01i {{<~Pop&tz\"Q0F@!N6&:!pB\\&!mCY/!K[;G!N6&:!/L_j!2ouj!6bOE!It8O!Ghfg!0dO9\n");
 				out.print("!42e9!8%>i!GhfS!DEKX!&+D;!)NZ;!,)@[!.k3$!2'=B\"4.$u\",Hru\"&o8b!t50o\"$?ZJ\"'bq1\n");
 				out.print("\"!du1!rN.6!/L_j!Pee:!rN.\"!pB\\:!NZ>R!Pee:~>\n");
 				out.print("<~!!+>I!@n6U.0BSr!t#~>}U NC} B\n");
 				out.print("/d01 {gsave 1 1 nR {d01i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d02 "))
-			{
+			if (monthhead.contains("d02 ")) {
 				out.print("/d02i {{<~Pop(pz\"Q0F@!<<0P!Q5$j!Q5#G!<</-!<<0P!W3!M!ltEo!ltDL!W2u*!W3!M!W2tk\n");
 				out.print("!ltD8!ltBf!W2sD!W2tk!<<.n!Q5#3!Q5!a!<<-G!<<.n!2ot;!6>5;!8mp[!;Zc$!>kmB!Q5&D\n");
 				out.print("!Q5%)!<<0d!5nqH!6,'l!6>3,!6>20!6>13!6,$H!5nlq!<<,h!<<-3!ltBR!ltB&!sAW%!s&EO\n");
@@ -529,8 +508,7 @@ public final class PSMonth {
 				out.print("<~!!+>I!@.aJ,Qe&m!s&K-,Qf4o,m+<#!s&Q-+pA&L\"!n*O!sKnO+pA&P,6K1p+p//~>}U NC} B\n");
 				out.print("/d02 {gsave 1 1 nR {d02i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d03 "))
-			{
+			if (monthhead.contains("d03 ")) {
 				out.print("/d03i {{<~Pop(,z\"Q0F@!2'Ct!2'AF!29Lm!1X(I!/pr/!5JV#!6kOH!>,?k!K7'7!JCJs!Ghc`\n");
 				out.print("!Cd(S!?V<E!6kLc!)NYX!*B4T!;->'!EfDt!JCI<!NlGW!Q5\"r!Q5$6!Q5&P!U'U7!Jgg\\!K$r[\n");
 				out.print("!K7(W!K7'O!B^D.!<</-!8%=J!8%B1!C-`\\!K$tc!O`)H!TF3,!X8aX![Il$!Sddu!R(YO!N#sf\n");
@@ -540,8 +518,7 @@ public final class PSMonth {
 				out.print("<~!!*0*\"![sO+pB1n+pA&m\"ToqP!sJ]L\"!RmN+pB:q\"Tno1\"To)~>}U NC} B\n");
 				out.print("/d03 {gsave 1 1 nR {d03i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d04 "))
-			{
+			if (monthhead.contains("d04 ")) {
 				out.print("/d04i {{<~Pop(6z\"Q0F@!;lq(\"/H$(\"'br(\"\"47j!<<4@!5J]$!5\\h-!5ns8!6,)E!65.P!5ejB\n");
 				out.print("!4i2q!3cJI!.b-O!%\\+,!&ss,!.\"W^!3#t(!5nm2!8[`;!:Bl@!;$<C!;Q[D!;lnt!;lq(!D!:9\n");
 				out.print("!GDP9!It6Y!La)\"!Or3@\"&K'/!t58/!o*k$!D!:9!H8$`!MBEL!Pe\\7!X\\p^!e:9p!dk\"'!OMig\n");
@@ -552,8 +529,7 @@ public final class PSMonth {
 				out.print("<~!!+AJ,6\\/o\"T\\]/,Qe&L\"XF0q\"TotQ\"![sq!sKkN\"UY~>}U NC} B\n");
 				out.print("/d04 {gsave 1 1 nR {d04i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d05 "))
-			{
+			if (monthhead.contains("d05 ")) {
 				out.print("/d05i {{<~Pop'/z\"Q0F@!;lpq!o*lS!o*iR!;lmp!;lpq!5J\\m!5\\h?!5nqY!5nle!58Gq!8RWp\n");
 				out.print("!?_Aa\"#L\"\"\")IsW\"-`e?\"0;L0\",$ZZ\"*\">:\"*=R&\"(2.g\"'kpc\"'5L!\"&8jK\"%3-s\"\"jSM!t51.\n");
 				out.print("!C-X`!=]%'!;6E#!;liT!;lm\\!o*i>!o*hK!uM(N!u1kp!u(g)!u(i\"\"#L*Z!qZSR!mh$[!<<44\n");
@@ -561,8 +537,7 @@ public final class PSMonth {
 				out.print("<~!!+>I!?q[L+pA&m\"TnoR!sKtQ$3~>}U NC} B\n");
 				out.print("/d05 {gsave 1 1 nR {d05i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d06 "))
-			{
+			if (monthhead.contains("d06 ")) {
 				out.print("/d06i {{<~Pop'-z\"Q0F@!ZV3Q!ZV6j\"2k5i\"*akq\"$?VJ!ZV7)!ZV:J\")J&F\"!dtN!pB_+!?;1]\n");
 				out.print("!Cd0-!GMY'!JCQJ!AFW*!>#?\\!:BqC!6bN6!3$%(!.Fug!)*GJ!*B:J!2'C0!8[de!>GVA!T4%c\n");
 				out.print("!T4\"B!&+H;!)N^;!,)D[!.k7$!2'AB!T4\".!T3sZ!T3s?!T!ff!SdZ'![%J6!Z_8e!ZV36!ZV3Q\n");
@@ -570,8 +545,7 @@ public final class PSMonth {
 				out.print("<~!!+PO\"ToqP!sKqP\"X4$P!sK#~>}U NC} B\n");
 				out.print("/d06 {gsave 1 1 nR {d06i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d07 "))
-			{
+			if (monthhead.contains("d07 ")) {
 				out.print("/d07i {{<~Pop'Gz\"Q0F@!SdZ'![%J6!Z_9(!ZV4p!ZV7a!\\=Bq!au+E!mgr4\"*ag=\",-`o\"/,_G\n");
 				out.print("\"3^bp\"3^c+\"!.ID!h'.)!^Hf0\"1/+P\")%aP\"\"XL1!ZV7u!ZV:B\")%c:!uqD:!pB_#!ZV:V!ZV;q\n");
 				out.print("!^Hjd!Sde,!T!p#!T4&:!T4%o!1X-*!5&C*!7V)J!:Bph!=T&1!T4%[!T4#=!)N_V!,quV!/L\\!\n");
@@ -579,8 +553,7 @@ public final class PSMonth {
 				out.print("<~!!*0*\"!RmN\"Y9`Z+p.uo!sJc1\"!RmU~>}U NC} B\n");
 				out.print("/d07 {gsave 1 1 nR {d07i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d08 "))
-			{
+			if (monthhead.contains("d08 ")) {
 				out.print("/d08i {{<~Pop'Iz\"Q0F@!4W+n!4i6o!5&An!5&@i!5&?c!4i2U!4W%@!;$:;!;$;2!V?D3!V?C(\n");
 				out.print("!V-5`!Up(3!\\aU6!\\FC`!\\=>r!\\=@k\"\"41h\"\"41$\"(VF#\"(;4]\"(20?\"(22s\",$a^\"%WM^!uqC[\n");
 				out.print("!\\=Ej!\\=G8!_`^#!Up3@!V->Y!V?Ir!V?I2!;HX5!4W+n!;$?r!V?Hs!V?Fi!;$=h!;$?r!\\=EV\n");
@@ -588,8 +561,7 @@ public final class PSMonth {
 				out.print("<~!!+8I,6J)O\"X=*Q-NaMr!s'YL!@.aJ,Qe&m!t#~>}U NC} B\n");
 				out.print("/d08 {gsave 1 1 nR {d08i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d09 "))
-			{
+			if (monthhead.contains("d09 ")) {
 				out.print("/d09i {{<~Pop'kz\"Q0F@!'gX2!+5n6!/q\"n!It8c!It6u!:U':!42h&!4Ds?!4W)\"!4W'\"!4W%!\n");
 				out.print("!4DlU!42_k!:0\\b!:0]Q!tYI\"!tYGl\"%WDg\"%<4*\"%30H\"%33l\")%b[\"!dsK!rN,H!d\"Lj!d\"NX\n");
 				out.print("\"3:RX\"*apX\"$cs5!'gX2!OMrB!^Hj$!^Hh6!OMpT!OMrB!:0d\"!It6a!IY#-!DigA!;HSF!<<.B\n");
@@ -599,8 +571,7 @@ public final class PSMonth {
 				out.print("<~!!+DK+pB7p\"XsNS,Qe&L\"TnoP!sJcP\"XO6O,QeA~>}U NC} B\n");
 				out.print("/d09 {gsave 1 1 nR {d09i NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d0a "))
-			{
+			if (monthhead.contains("d0a ")) {
 				out.print("/d0ai {{<~Pop(Hz\"Q0F@!k8?J!iuL2!o=$A!s/RC!u:u6\"\"FC(\"$-N+\"%WM@\"'#FS\"'bpj\"'u(/\n");
 				out.print("\"().H\"&T/N\"#L+C!u;!6!pp)q!k8?J\"+UB9\"#'_`!pTdR!jD\\f!o3m!!sSe3\"\"F?F\"&8nY\")S*G\n");
 				out.print("\",I\"h\"!drH!uqAj!t#*&!q67(!n@>(!jr'&!g!G!!b_V3!`/qB!_<CN\"2Fur\")n>n\"#L)O!_<Cb\n");
@@ -611,8 +582,7 @@ public final class PSMonth {
 				out.print("<~!!*0J\"T]hO\"![sp!sKkN\"X4$n\"ToqP-3GFq\"!n*p!t#~>}U NC} B\n");
 				out.print("/d0a {gsave 1 1 nR {d0ai NNC bf} for grestore WNC} B\n");
 			}
-			if (monthhead!=null && monthhead.contains("d0b "))
-			{
+			if (monthhead.contains("d0b ")) {
 				out.print("/d0bi {{<~Pop(8z\"Q0F@!NZCA!R:e@!U'W6!Vcb!!XJl`!Z(qf![\\\"3!]1!S!]gEn!]C.,!\\sk>\n");
 				out.print("!X8b/!OMsU!NZCA!'C?3!*fU3!-A;S!0.-q!3?8:!O)Y?!Jgg!!F>hh!Ajjm!=8fp!9aJ:!71cu\n");
 				out.print("!;HTQ!>5G#!BU>X!HJ5E!N6&0!T=(q!ZV7]!MfaN!>,>Q!+Z)f!,)AZ!D!4p!Y#0u!k8;j!oO-M\n");
@@ -624,12 +594,12 @@ public final class PSMonth {
 				out.print("/d0b {gsave 1 1 nR {d0bi NNC bf} for grestore WNC} B\n");
 			}
 		}
-		String jiestr = "";
+		String jiestr;
 		if (!bSingle)
 			month = 1;
-		jiestr = PSjieqi[(month - 1) * 2] + PSjieqi[(month - 1) * 2 + 1];
-		if (!bSingle || jiestr.contains("j00 "))
-		{
+		jiestr = PSjieqi[(month - 1) * 2];
+		jiestr += PSjieqi[(month - 1) * 2 + 1];
+		if (!bSingle || jiestr.contains("j00 ")) {
 			out.print("/j00 {{<~Pop'Uz\"Q0F@!NZCI!MBP5!QkM,!TjJn!V-=N!WE0.!Y5A8![\\!n!^$QM!^6]l!\\+:s\n");
 			out.print("!Ytm$!UKok!NZCI!,)H3!/L^3!2'DS!4i6q!8%A:\"/H\"^\"&o@^!uM+;!,)H3!>klk!=/aS!@S\"-\n");
 			out.print("!C$VT!DWZs!F,Y;!G)9g!GDKL!GVW/!H\\>.!JUUJ!LEfd!M]Z.!NH/S!O)T!!NH0B!LNn`!JLR(\n");
@@ -637,8 +607,7 @@ public final class PSMonth {
 			out.print("\"&&]j!]U1U!cS/c!ic:2!pB\\n~>\n");
 			out.print("<~!!*0I\"T\\]/,Qe&L-3XDo!sKkN\"XF0R$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j01 "))
-		{
+		if (!bSingle || jiestr.contains("j01 ")) {
 			out.print("/j01 {{<~Pop(Vz\"Q0F@!PecP\"$?Y#!r)j#!ltGm!QY>l!R_&A!Smhm!U'VF\"-`mI\"&&fI!uM,6\n");
 			out.print("!UKn^!VlhN!X8b&!Yba<!PAN]!PAN2!O`)U!NZAs!+Z1*!/(G*!2ouZ!N6)[!MBN0!L<fZ!K7*0\n");
 			out.print("!/L^+!2ot+!6bM[!JCNi!HA1(!FPtJ!Dii\"!%\\1R!)*GR!,r!-!CQuW!<E5c!20F]!$hSE!%7k9\n");
@@ -649,8 +618,7 @@ public final class PSMonth {
 			out.print("!l4kV!l+fk!l+hq~>\n");
 			out.print("<~!!+>I\"XF0R!sKqP\"XF0R,Qe2P+pA&n\"TotQ,Qe2N,Qe&m!s'\\M+pB7p\"UY~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j02 "))
-		{
+		if (!bSingle || jiestr.contains("j02 ")) {
 			out.print("/j02 {{<~Pop(`z\"Q0F@!dk!@!dk!,!l4ka!pK\\k!qZIL\"!.G1\"$$?\\\"%3-$\"&8i?\"&o8_\"&o9-\n");
 			out.print("\"&o>h\"*amS\"#pAW!t57L!Xo.K!Xo05\"3:RH\"+UKP\"&&f5!&t's!*B=s!,r$>!/^k\\!2p!%!S@KV\n");
 			out.print("!S@Il!7V(g!13iS!1Et_!1X*A!1X(M!1X&X!1En:!13aK!71^N!71eO!S@IX!S@Fd!S.8@!Rq*C\n");
@@ -661,8 +629,7 @@ public final class PSMonth {
 			out.print("!kn[>!m^lk!mUg-!kJD/!i?!0!e:<!!_<?V!^HdB~>\n");
 			out.print("<~!!*0H\"Y0ZY,Qf4o,6J)O\"X4$m\"T]kP!s'YN!s'YN!s'YN!t#~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j03 "))
-		{
+		if (!bSingle || jiestr.contains("j03 ")) {
 			out.print("/j03 {{<~Pop'[z\"Q0F@!S@Lu!SRXL!Sdct!SdcB!Sd[r!Sd[L!RLh.!P/8o!M]XY!I4[4!B^@T\n");
 			out.print("!B^@@!K7#+!O_u5!PAC`!Vl^U!Z1oJ!Z1p=!Z2!k!c7t<!oX.C\"*=O)\"+1*Q\".B5+\"4.%d\"4.%p\n");
 			out.print("\"&]-g!nmZh!b_Wt!jVlF!pfuS!u:sF\"$Zk7\"(;8i\"+112\"#pB2!u1n1!mLeK!al(+!_!0J!\\shj\n");
@@ -670,10 +637,8 @@ public final class PSMonth {
 			out.print("!.Y-,!1EtJ!4W)h!D!9N!?_Ee!5\\aZ!&+D/!'C7/~>\n");
 			out.print("<~!!*6*+pA&m\"ToqP\"![sO,6]7n!<jbO\"Tno1$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j04 "))
-		{
-			if (bIsSim)
-			{
+		if (!bSingle || jiestr.contains("j04 ")) {
+			if (bIsSim) {
 				out.print("/j04 {{<~Pop)Yz\"N1G]!D!;@!GDQ@!It7`!La*)!Or4G\"4RDe\"-`mq\"(23Z!D!;@!Z1ql!RLjl\n");
 				out.print("!Q>(A!NZ;S!JUUN!FGiH!B:(F!>#6I!>kfE!E&oW!JLNa!O)Rb!SRPa!W<$I!Z1ql!n76M!tG>T\n");
 				out.print("\"#g5J\"&8j/\"(VCg\"*jlf\",m5+\".fLC\"/Z'^\"/Gq&\"/,_A\"-!<L\")%]F\"%!#>!tkW+!n[Na!n76M\n");
@@ -703,9 +668,7 @@ public final class PSMonth {
 				out.print("!>#;N!<iN6!:U%$!87Je!4`.J!/pt%~>\n");
 				out.print("<~!!+>I+pA&n\"Tp+U\"![sO+pB.m+pB=r\"T]kN\"XaBU+p0\"m,Qe2P-3XJq\"T]kN!@.aJ\n");
 				out.print("\"![t#!sKkN\"X4$P\"!RmN+pA;~>}U NC} B\n");
-			}
-			else
-			{
+			} else {
 				out.print("/j04 {{<~Pop,`z\"Q0F@!:0d*!D!:1!D!9N!:0cG!:0d*!dk),!f-qL\"!@\\:!tYPL!qZQV!mC_Y\n");
 				out.print("!j2UX!gEcf!dk),!:U(1!@.b(!@.bT!JCP_!JCOl!Or4_!OW\"n!OMr*!OMr:!`/u,!Yba0!UKo1\n");
 				out.print("!OMrN!OMs!!RLqQ!It:%!J1EV!JCQ8!JCPs!@.bh!@.c7!B^Ic!:U*;!:g6%!;$A]!;$A8!'gX.\n");
@@ -747,8 +710,7 @@ public final class PSMonth {
 				out.print("\"TotQ\"!Rmm!s&KN\"TnoS!sL%S\"X4$m\"XF0R!@.aJ,QeA~>}U NC} B\n");
 			}
 		}
-		if (!bSingle || jiestr.contains("j06 "))
-		{
+		if (!bSingle || jiestr.contains("j06 ")) {
 			out.print("/j06 {{<~Pop'sz\"Q0F@!I+^R!Diki!?hO4!:0c]!4Dr0!-nV[!&O`3!'C;/!0I<a!7q98!=f0]\n");
 			out.print("!CR\"+!HnPT!Mfg.!QY@f!I+^R!g!M_!^m.3!`fD/!dFeK!ic=1!o!ck\"!I^p\"+1.A\"-*Ep\"0;PI\n");
 			out.print("\"4RAt\"4RB+\",m:E\"%E?#!sA[q!l4rh!g*R6!d\"O/!g!M_!8IW0!;lm0!?_F`!Ls32!L*W!!IFiZ\n");
@@ -757,8 +719,7 @@ public final class PSMonth {
 			out.print("!osCg!sAZJ!mC^J!i,lO!8IW0~>\n");
 			out.print("<~!!+8I\"!Rmm!s&KK\"ToqP!s'VK+pA&m\"TotQ\"![sp!t#~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j07 "))
-		{
+		if (!bSingle || jiestr.contains("j07 ")) {
 			out.print("/j07 {{<~Pop)Kz\"Q0F@!OMmg!uM(\"!uM''!OMll!OMmg!OMlX!uM&h!uM%Y!OMkI!OMlX!IOqo\n");
 			out.print("!Ib(C!It3F!It2!!It0P!Ib#N!IOkq!OMhp!OMk5!uM%E!uM$.!uM#p!t,*Z!qH>A!n[L'!jr#[\n");
 			out.print("!f-i4!f-i$!o3ik!sns(!t5/X\"#^-:\"&&\\q\"&&]R\"&&aJ\"*=S5\"#'d)!sAZ\"!PAI.!IOqo!^$Q]\n");
@@ -771,8 +732,7 @@ public final class PSMonth {
 			out.print("!6tZr!87MZ!9aL_!;Zd/!=JuR!=o8m!<rX*!;lq:!7Ct0!/L`a~>\n");
 			out.print("<~!!+>I!@.aJ+pB4o+pA&m\"XX<P+p.uo!sKqP\"Yg)_!<XPM\"\"+6Q\"!e$N\"!e$W~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j08 "))
-		{
+		if (!bSingle || jiestr.contains("j08 ")) {
 			out.print("/j08 {{<~Pop(.z\"Q0F@!MBJ_!MBNK!Pee2!JCQ&!GDR;!5J\\=!/L`)!/^k0!/puu!/ptM!/ps$\n");
 			out.print("!/^ed!/LXe!5JUh!5JVg!Ghdi!Ghcn!Mf`q!MKO;!MBIn!MBJ_!5J\\)!Ghj+!Ghgb!5JY`!5J\\)\n");
 			out.print("!5JYL!GhgN!Ghe(!5JW&!5JYL!=Srb!>GM^!Fu1!!NH-?!TjBd![7X3!^m&T!_`Wr\"$?Uc\"$?S!\n");
@@ -781,10 +741,8 @@ public final class PSMonth {
 			out.print("!=Srb!`T8L\"$?[5\"$?X\\!`T5s!`T8L!`T5_\"$?XH\"$?V\"!`/p5!`B(\"!`T4i!`T5_~>\n");
 			out.print("<~!!+DK+pB7p\"T]kN!@.aJ\"!Rmm\"!RmN+pB:q,R\"2o!s'VK\"UY~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j09 "))
-		{
-			if (bIsSim)
-			{
+		if (!bSingle || jiestr.contains("j09 ")) {
+			if (bIsSim) {
 				out.print("/j09 {{<~Pop(*z\"Q0F@!Fu;B!DW`[!@S%Z!:U(=!4W*t!.4jY!'C=A!(6m9!20Iq!=],.!Jgho\n");
 				out.print("!O)ZJ!Fu;B!aGht!`T8`!j2W*!p9Y9!r`97!u(h3\"\"46/\"#pA)\"%WL\"\"',K*\"(D>A\")\\1W\"*+Im\n");
 				out.print("\")n>.\")S,C\"',LF\"\"FC8!r`:)!kADY!aGht!]U9%!UKnf!R:cJ!M9Fr!F>h2!?;.F!4W';!&+Fe\n");
@@ -792,9 +750,7 @@ public final class PSMonth {
 				out.print("!]U9%!pfr8!u(d#!mgtp!iuF$!E9)u!>GRU!>Y]i!>ki(!>kh9!>kgJ!>YZX!>GMf!E9%m!E9&\\\n");
 				out.print("!jDZd!jDYa!q61d!pou>!pfpL!pfr8!E9)a!jD]i!jD[#!E9&p!E9)a~>\n");
 				out.print("<~!!+8I!sKkN!<XYP!<XML\"![sO\"X4$L,m,=p,m+;O,QeA~>}U NC} B\n");
-			}
-			else
-			{
+			} else {
 				out.print("/j09 {{<~Pop+'z\"Q0F@!<`L0!&t'c!*B=c!.4l>!<`Kq!<`JR!,M_d!/pud!2K\\/!58NM!8IXk\n");
 				out.print("!U'U#!NZA#!JCO(!Ajl-!AjmL!Yb`-!Rq4-!Mfg&!Ajm`!AjnK!Dim&!<<5O!<NA.!<`L]!<`L0\n");
 				out.print("!Mfc>!O)VB!Peaj!RLm5!T4#O!Up.h!W`@*!Yb]@!T4$P!Pebe!.4iu!-eR@!,M_4!+Z.K!)s\"k\n");
@@ -814,8 +770,7 @@ public final class PSMonth {
 				out.print("-j9VR+p@uL,6]Cr+pA&n\"UY~>}U NC} B\n");
 			}
 		}
-		if (!bSingle || jiestr.contains("j0a "))
-		{
+		if (!bSingle || jiestr.contains("j0a ")) {
 			out.print("/j0a {{<~Pop(^z\"Q0F@!MBNK!>GVi!8%BM!87N/!8IYC!8IX3!8IW\"!87J+!8%=N!>GRM!>GRq\n");
 			out.print("!H8)#!E]B(!Aab\"!<N9g!71`V!13cB!*B6*!+Z)*!/pog!4`*]!:0^b!?M7e!D!5`!GDLQ!Jgb;\n");
 			out.print("!O;_3!U'O9!KmGO!;un4!%7h<!%\\+0!<rNu!N6!D!Y>@E!dF]m!q$%b\"*=N&\"*jlE\".9.&\"4R<q\n");
@@ -826,14 +781,11 @@ public final class PSMonth {
 			out.print("!g!G1!bqa-!^6W)!Xo)$!RUoc!MBH_!I+Wm~>\n");
 			out.print("<~!!+8G+pB1n+pA&o\"TotQ\"![so!sKtQ\"XO6S,m+;Q\"T]kN!@.aJ,Qe&L+pA;~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j0b "))
-		{
+		if (!bSingle || jiestr.contains("j0b ")) {
 			out.print("/j0b {m08} B\n");
 		}
-		if (!bSingle || jiestr.contains("j0c "))
-		{
-			if (bIsSim)
-			{
+		if (!bSingle || jiestr.contains("j0c ")) {
+			if (bIsSim) {
 				out.print("/j0c {{<~Pop*Xz\"Q0F@!V?IV!CR#P!Fu9P!IOtp!L<g9!OMqW!V?IB!V?Ht!V-<O!Up0+![Ij\"\n");
 				out.print("![Ijr!jDbT!jDaA!osF8!oX4O!oO.i!oO//\"2\"^a\"*aoa\"%WMV!oO/C!oO0>!sA_-!iuLJ!j2X,\n");
 				out.print("!jDcS!jDbh![Ik1![Il0!_<Et!Up3@!V->t!V?JC!V?IV!K[?O!XJhr!WW7<!S@DQ!K[;[!K[?O\n");
@@ -849,9 +801,7 @@ public final class PSMonth {
 				out.print("!/q#Y!/(HE!3?9=!6,+-!7Crj!8[eR!:0dW!<*''!=o8J!>>Pe!=Ap\"!<<42!7h7(!/q#Y~>\n");
 				out.print("<~!!+8G\"TnoS!sL%S\"XF0R!<WK-!?qUm\"Tno1-3YRq+pA&m\"Y0ZY,Qf4o!@.aJ\"![sO\n");
 				out.print("-NsMQ,R\"2N,R\"M~>}U NC} B\n");
-			}
-			else
-			{
+			} else {
 				out.print("/j0c {{<~Pop*Tz\"Q0F@!GDHQ!MBET!MBK:!b;?T!b;<8!b).?!al!j!h96]!gs%-!giut!gj$3\n");
 				out.print("\"'>UI\"'>Pb\"'>PJ\"&Ju6\"$cj&\"#'^k!tYHO!oO''!oO&l\"!%A>\"$?QC\"$?Q#\"*\";h\",m4S\",m59\n");
 				out.print("\",m9i\"0_hH\"*alH\"&o=Y!gj$G!gj%n!oO-a!oO-1!uM*$!u1m9!u(gp!u(hs\"5Eu<\".TI<\")J'5\n");
@@ -869,8 +819,7 @@ public final class PSMonth {
 				out.print("-NsMQ,R\"2N,R\"M~>}U NC} B\n");
 			}
 		}
-		if (!bSingle || jiestr.contains("j0d "))
-		{
+		if (!bSingle || jiestr.contains("j0d ")) {
 			out.print("/j0d {{<~Pop'[z\"Q0F@!&Oa\"!)s\"\"!,M]B!/:O`!2KZ)!;lm,!;lhe!8%:%!?;)-!B^@$\"*=N^\n");
 			out.print("\"\"4/^!pfo?!B:(4!B:,h\"3:NP\"*alT\"#p?)!\\aZu!`B(_!a5Y.!_<B7!]:%>!X]\"6!QY>t!Pec`\n");
 			out.print("!T4$Z!V?GP!W3\"B!X&R3!XSop!Xo,Q!&Oa\"!iuJ@\"3:Q]\"*ao]\"$cr>!iuJT!iuKO!n7=>!cS7[\n");
@@ -878,10 +827,8 @@ public final class PSMonth {
 			out.print("!Fu9L!Fu7j!Ls4i!Ls6/!d\"M]!d\"L2!iuI1!iuJ@~>\n");
 			out.print("<~!!*0*/d!:$\"!RmN!@IsQ,Qe2o!sL(T$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j0e "))
-		{
-			if (bIsSim)
-			{
+		if (!bSingle || jiestr.contains("j0e ")) {
+			if (bIsSim) {
 				out.print("/j0e {{<~Pop(Nz\"Q0F@![%Q[!h]V1!h]SD![%Nn![%Q[!n7:e\"(22G\"(2/Z!n78#!n7:e!U'Q'\n");
 				out.print("![%N\"![%NZ!h]S0!h]Q?!hKC^!h969!n[K8!n@9o!n75F!n77d\"(2/F\"(2._\".0+V\"-ioK\"-`jQ\n");
 				out.print("\"-`kg\"1SEN\"+UIN\"'>WS!n7;$!n7=2!r)kr!h9AF!hKLo!h]Wp!h]VE![n-\"!U'U_!U9a3!UKlH\n");
@@ -890,9 +837,7 @@ public final class PSMonth {
 				out.print("!JCQ^!FZ)%!AXb8!;HYB!5/JJ!.k;V!([2g!)*J[!/q\"K!6,+8!;lq$!;lo\"!&+JU!)N`U!-A:0\n");
 				out.print("!;$>[!9=2e!6P?_!2]eH!.k61!*B7m!%7jR!&+EN!.k5@!6,&6!;lm0!;ljg!;Z\\o!;HOJ~>\n");
 				out.print("<~!!+>I!@.aJ,6J)O\"X=*Q-NaMr\"!RmL\"!n*t!sJcN\"TnoS\"!RmN+pA;~>}U NC} B\n");
-			}
-			else
-			{
+			} else {
 				out.print("/j0e {{<~Pop)Sz\"Q0F@\")n<P\",m;+\"'>W+\"#p@@!k8;j!k8=,\"2k99\",$b9\"'>X6!k8=@!k8>S\n");
 				out.print("!t>?[\"&&fJ\"*=Wu\"$?\\$!u(jA!oF*R!hKLY!aGh^!Ykfb!QY@b!QY@R!U'Vr![\\\"_!e^Yp!e^Xa\n");
 				out.print("!K7*h!NZ@h!RLoC!e^XM!e^W6!XJjd!R(VD!R:b&!RLm@!RLl<!RLk7!R:^N!R(R,!WW7#!WW7;\n");
@@ -906,8 +851,7 @@ public final class PSMonth {
 				out.print("<~!!+PO\"ToqP!sL(T+pBJ!\"YKlX,Qe&m!s'YL!@.aJ\"!RmN\"XO6p\"ToqP\"\"\"0u!sK#~>}U NC} B\n");
 			}
 		}
-		if (!bSingle || jiestr.contains("j0f "))
-		{
+		if (!bSingle || jiestr.contains("j0f ")) {
 			out.print("/j0f {{<~Pop(&z\"Q0F@!/pte!4W(=!71cb!;HU@!AFR+!GDNk!MTWV!T4#E!T3up!/pqp!3?2p\n");
 			out.print("!5nn;!8[`Y!;lk\"!T3u\\!T3s&!&+Ct!)NYt!,)@?!.k2]!2'=&\"3^aU\"+1*U\"$cj2!ZV2b!ZV5C\n");
 			out.print("\"*=QG\"!doG!pBZ$!ZV5W!ZV80!`9\"m!gs*i!qZP%!so#o!u_4c\"\"43X\"#U,K\"%*+U\"&]0t\"(20=\n");
@@ -916,8 +860,7 @@ public final class PSMonth {
 			out.print("!K$t7!Fu93!BpS9!>bg=!;HVW!9+'1!6YF_!3QB7!/pte~>\n");
 			out.print("<~!!*0G\"X=*Q,Qe3\"\"\"\"0R,R#Ir\"TotQ$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j10 "))
-		{
+		if (!bSingle || jiestr.contains("j10 ")) {
 			out.print("/j10 {{<~Pop(jz\"Q0F@!AFV3!mCb&!mCa3!AFU@!AFV3!AFU,!mC`t!mC_u!AFT-!AFU,!MBI(\n");
 			out.print("!o*fe!o*eZ!Ghc>!Ghd1!MBI(!Ghc*!o*eF!o*d7!Ghap!Ghc*!;$>O!AFSN!AFSn!QY>\\!QkJ6\n");
 			out.print("!R(Uj!R(UM!5nqD!9=2D!?_G7!R(U9!R(T6!'C;O!*fQO!-A7o!0.*8!3?4V![%O!!Smd`!M0=T\n");
@@ -928,12 +871,10 @@ public final class PSMonth {
 			out.print("!sA]G!sA^J\"\"XP5!pg$-!lP22!B:1O!;$B3!;6MT!;HY$!;HXI!;HWn!;6K6!;$>O~>\n");
 			out.print("<~!!+>I!@.aJ,m+/n!s'VK\"XaBU!sJcN\"ToqP,m+;r!sKqP+pA&m\"Y9`Z,m,=p$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j11 "))
-		{
+		if (!bSingle || jiestr.contains("j11 ")) {
 			out.print("/j11 {m07} B\n");
 		}
-		if (!bSingle || jiestr.contains("j12 "))
-		{
+		if (!bSingle || jiestr.contains("j12 ")) {
 			out.print("/j12 {{<~Pop)5z\"Q0F@![n-B!Z2\"2!Y>F1!W<(=!T4#W!Q\"mo!Or1P!Q\"mP!QtNN!SRSZ!U^!r\n");
 			out.print("!WiE5!Y>DS!ZD,&![@bL![n,9![n-B!iuK_!mCbJ!c.t_!cA)u!c.qJ!bML3!abuo!`B&e!^6Wi\n");
 			out.print("!\\+3l!Y#.o!U'Nr!Q\"hs!K@(g!D!2M!DEJA!JpeC!Pe\\H!Up)N![%KS!_!+W!al$Y!dXlZ!fd<$\n");
@@ -945,10 +886,8 @@ public final class PSMonth {
 			out.print("!0%##!+Gs_!&+EB!&O]6!/pq1!7Cn-!=/`,!=/]`!<rOl!<`BR!CQoY!C6^#!C-Y_!C-\\`~>\n");
 			out.print("<~!!*0J\"T]eL,R\"8t\"Tp\"R+p0\"m!@.gq!sJcN\"TnoS\"!RmN+pA&P$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j13 "))
-		{
-			if (bIsSim)
-			{
+		if (!bSingle || jiestr.contains("j13 ")) {
+			if (bIsSim) {
 				out.print("/j13 {{<~Pop(Lz\"Q0F@!>#=J!QY>X!O)VW!K@,e!FPq-!AFPB!=Akt!:U%p!;ZbE!<iOq!>#=J\n");
 				out.print("!]0tk!Up0k!Q5&h!>kmf!A+Bk!B^HQ!Cd/n!D`f4!EfMN!Fu:g!=/e3!<iRW!;$@G!7V(W!42ef\n");
 				out.print("!/(Bp!(6iu!)ru$!/prI!5&?s!9=2L!:BmM!>#9d!D!5:!@e*K!<rPV!87FY!3Q<[!-nQX!'C6P\n");
@@ -957,9 +896,7 @@ public final class PSMonth {
 				out.print("!k\\T1\"!I_K\"(20O\"*t\"?\"-Wc-\"/Q%>\"0_gq\"1eON\"0)Da\"+C;T\"&]2F!tbU%!k\\TE!k\\VO!o*m6\n");
 				out.print("!e:B_!eLN!!e^YF!e^Y$!e^Sr!e^S<!eLF[!e::'!l+g.!keUX!k\\P-!k\\PU!k\\T1~>\n");
 				out.print("<~!!*0H\"T]hM+pA&m\"Tp\"R\"!n*Q,R\"8N,R#Cp\"Tno1\"To)~>}U NC} B\n");
-			}
-			else
-			{
+			} else {
 				out.print("/j13 {{<~Pop*\\z\"Q0F@\"#'eD\"$cpP\"(22C\"*amt\",[0<\".KAW\"0;Rl\"2\"^%\")n?!\"&K(*!V?I\"\n");
 				out.print("!V?Ij\"%35f!rrFf!mh$[!V?J)!V?JQ!ZV<@!Or6]!P/B/!PAMB!PAL?!9=4f!2'EF!29P7!2BU,\n");
 				out.print("!29N#!2'@m!13df!/^da!.+^[!*TAI!%7h,!&O[0!,_dU!1*\\j!3Q=o!5nmr!7:gt!7V%t!7h2r\n");
@@ -978,15 +915,13 @@ public final class PSMonth {
 				out.print("+p@uk\"ToqP!sL\"R+pA&m\"X4$P!sK#~>}U NC} B\n");
 			}
 		}
-		if (!bSingle || jiestr.contains("j14 "))
-		{
+		if (!bSingle || jiestr.contains("j14 ")) {
 			out.print("/j14 {{<~Pop''z\"Q0F@\"&o?G\"+112\"$?Z2!tYP/!JCOL!R(XD!W`CW![Il0!QYAe!PJT*!M'<m\n");
 			out.print("!GDQ0!;HWj!5&CJ!58N)!5JX[!5JW6!5JUe!58H<!5&:g!;HOf!;HPi!uq<:!uq;+\"'>P&\"'#>U\n");
 			out.print("\"&o;(\"&o?G!;HWV!uqC'!uq@.!;HT]!;HWV!;HTI!uq?o!uq<N!;HQ(!;HTI~>\n");
 			out.print("<~!!+>I\"TnoP\"!Rmp!sJ]N!s'YL$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j15 "))
-		{
+		if (!bSingle || jiestr.contains("j15 ")) {
 			out.print("/j15 {{<~Pop*Rz\"Q0F@!Ls3*!Or1Z!JCMR!GDNk!42ea!.Y,I!.k8(!/(C[!/(C6!/(Be!.k6>\n");
 			out.print("!.Y)l!42c_!42cs!=/^r!=/[q!42`b!42b<!7V$#!.Y)H!.k4T!/(?f!/(?&!&st#!+5d`!,qp3\n");
 			out.print("!9sQ/!RLhV!R(Pb!B:(X!B:*.!Pe^a!K[=e!H8'%!B:*B!B:+M!Ghe,!Ghda!MBIX!M'7j!Ls2?\n");
@@ -1003,8 +938,7 @@ public final class PSMonth {
 			out.print("<~!!+AJ+pB@s\"X4$P.g#qU,Qe&L+p@up!sJcO\"ToqP,m+;s\"![sO,6\\)n!s'VK\"XsNW\n");
 			out.print(",m,Fs!sJc1!@.aJ,Qe&m!s'YL$3~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j16 "))
-		{
+		if (!bSingle || jiestr.contains("j16 ")) {
 			out.print("/j16 {{<~Pop)ez\"Q0F@\"#pAG\"%34K\")\\2X\"-s$G\"2\"^m\"+12u\"&oA%!XJm-![Rqb!\\FM+![%T4\n");
 			out.print("!YPU;!V-?0!Pefi!Or6Y!S@LV!U9c?!Up1j!2'En!2'FA!0@;1!/1MH!-//e!*B=3!'LDU!'(,@\n");
 			out.print("!)*IJ!+#`R!-/.j!/:R9!1Eu]!29Q.!2'EZ\"'bpn\"#pAG!E]E9!/L]h!2osh!6bMC!E]E%!E]Ck\n");
@@ -1018,8 +952,7 @@ public final class PSMonth {
 			out.print("!_rb\"!_`V3!_EDB!^$KF![Ie=!Xo*3!TX8p!NZ<H~>\n");
 			out.print("<~!!*0*,6K+n!sKnO,R#@o!A4Hu\"ToqP\"![sO+pB\\'\"XF0R!@.aJ,Qe&L-3XDP,m=V~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j17 "))
-		{
+		if (!bSingle || jiestr.contains("j17 ")) {
 			out.print("/j17 {{<~Pop)[z\"Q0F@!:0a1!&O`#!)s!#!,M\\C!/:Na!2KY*!8%=^!3cK+!-/)8!$D93!%7i/\n");
 			out.print("!-eLj!4`+G!:0_s!:0^H!9sQ1!9aD2!@.Y-!?hGt!?_C)!?_DJ!Die_!H\\>d!KI0\\!N,qR!Oi'c\n");
 			out.print("!PSR9!Q5!c!P&4p!Ls0a!Ib&P!EB/3!?_D^!?_EQ!T4!g!Ls2c!H8(`!?_Ee!?_Fh!B^EC!9aJh\n");
@@ -1034,8 +967,7 @@ public final class PSMonth {
 			out.print("<~!!+8G\"Tno1+pA&p\"XjHV!@7gO,m,=p!@.aJ,Qe&m!s'YL!<XML.0B`\"\"!n*Q\"TnoP\n");
 			out.print("!s'YL!@.aJ,QeA~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j18 "))
-		{
+		if (!bSingle || jiestr.contains("j18 ")) {
 			out.print("/j18 {{<~Pop)Kz\"Q0F@!_<E$\"!@\\R!qcX<!m1T/!h]V-!dXq)!a#O3!]U9I!^-WX!^Zuh!_<E$\n");
 			out.print("!e:BO!]1#/!\\OS^!Z_Ar!WW<j!TF1a!PJQW!K[AM!LNqI!R_%[!X&So!\\=F-!^m+b!au/O!e^WJ\n");
 			out.print("!]C*`!TaA/!K[?_!LNoW!Vuj/!`T4d!i,mJ!pftZ\"$-K)\"-<Qe\".]K7\"181a\"5!Z7\"5!ZC\")7m2\n");
@@ -1049,8 +981,7 @@ public final class PSMonth {
 			out.print("<~!!*0H\"T\\]L\"TotQ\"![sO+pB4o\"T^.V\"X4$P,6J)n!sKqP\"Tno/,m>Ut+pA&P!<XPM\n");
 			out.print("+p//~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j19 "))
-		{
+		if (!bSingle || jiestr.contains("j19 ")) {
 			out.print("/j19 {{<~Pop(<z\"Q0F@!Jgj%!I+^7!EfM.!A\"<_!<*&:!6#\"a!.Y,)!/L\\!!8R]a!@e/T!H8,P\n");
 			out.print("!K@0*!OVud!U'SU!J1@C!:^)e!&O^e!&O^Q!;$;D!K[?(!XJiQ!dFac!qHAH\"*aiW\",[,4\"/l6f\n");
 			out.print("\"4.(A\"4.(Q\",-c`\"$Qb&!rN)M!kA?s!d+PS!\\a[D!cS3g!ji$F!rN-7\"!dt\"!osH\"!k8=t!K[CK\n");
@@ -1060,8 +991,7 @@ public final class PSMonth {
 			out.print("!c%g]!_NKL![n):!VQPn!OMm?~>\n");
 			out.print("<~!!+8I\"![sO,6\\/o\"XF0R!s'SJ+p@uL-3XDP,m=V~>}U NC} B\n");
 		}
-		if (!bSingle || jiestr.contains("j1a "))
-		{
+		if (!bSingle || jiestr.contains("j1a ")) {
 			out.print("/j1a {{<~Pop(Lz\"Q0F@!2KY.!5no.!8IUN!;6Gl!>GR5!q65h!q64=!5nmd!9=.d!;lj/!>Y\\M\n");
 			out.print("!Ajfk!q64)!q62O!/po>!3?0>!5nk^!8[^'!;lhE!q62;!q61<\"\"XF7\"\"=4N\"\"4/k\"\"427\"&K#s\n");
 			out.print("!t54o!pBZt!2KY.\"#'eP\"#p@P\"%WKp\"'boC\"*=Us\",m<N\"/Z.q\"2k95\"+UJ=\"'>X>!Y>GJ!Y>H]\n");
@@ -1071,27 +1001,61 @@ public final class PSMonth {
 			out.print("\"!@Z8\"!@ZL!`T6*!7V'8!7V'$!MBKF!MBKZ!7V'8!`T4d!`T4P\"\"44%\"\"449!`T4d~>\n");
 			out.print("<~!!*0*,Qe2q!sKnO\"XF0N\"!Rmt!sKtQ,m=AS!sKkN!@.aJ,Qe&m!s'YL$3~>}U NC} B\n");
 		}
-		out.printf("/BH {%d} def\n", 2250 / nWeeks);
+		out.printf(Locale.ROOT, "/BH {%d} def\n", 2250 / nWeeks);
 		out.print("/Mf {gsave currentpoint translate\n");
 		out.print("0 0 600 BH L\n600 0 600 BH L\n1200 0 600 BH L\n");
 		out.print("1800 0 600 BH L\n2400 0 600 BH L\n3000 0 600 BH L\n");
 		out.print("3600 0 600 BH L\ngrestore} B\n");
 		out.print("%%EndSetup\n");
 		out.print("\n%%Page: 1 1\n");
-		if (bSingle)
-		{
+		if (bSingle) {
 			out.print("gsave 50 400 moveto currentpoint translate\n");
 			out.print("% Grids\n");
 			int i;
 			for (i = 0; i < 7; i++)
-				out.printf("%d 2250 600 150 F\n", (i * 600));
+				out.printf(Locale.ROOT, "%d 2250 600 150 F\n", (i * 600));
 			for (i = 0; i < nWeeks; i++)
-				out.printf("0 %d m Mf\n", (i * 2250 / nWeeks));
+				out.printf(Locale.ROOT, "0 %d m Mf\n", (i * 2250 / nWeeks));
 			out.print("% Month heading\n");
 		}
 	}
+
+
     public static void PrintClosingPS() {
         System.out.print("grestore\nshowpage\n%%Trailer\n%%EOF\n");
     }
 
+    static String number2MonthPS(double month, int start, int days, boolean year) {
+        StringBuilder name = new StringBuilder();
+        Number2MonthPS(month, start, days, year, name);
+        return name.toString();
+    }
+
+    static String number2DayPS(int day) {
+        StringBuilder name = new StringBuilder();
+        Number2DayPS(day, name);
+        return name.toString();
+    }
+
+    static void printHeaderPS(String title, boolean simplified, boolean leap) {
+        PrintWriter out = new PrintWriter(System.out);
+        PrintHeaderPS(out, title, simplified, leap);
+        out.flush();
+    }
+
+    static void printHeaderMonthPS(String header, short month, boolean single,
+            boolean simplified, boolean leap, int weeks) {
+        PrintWriter out = new PrintWriter(System.out);
+        PrintHeaderMonthPS(out, header, month, single, simplified, leap, weeks);
+        out.flush();
+    }
+
+    static void printClosingPS() {
+        PrintClosingPS();
+    }
+
+    static String getPSBigMChar(int index) { return PSbigmchar[index]; }
+    static String getPSTianGan(int index) { return PStiangan[index]; }
+    static String getPSDiZhi(int index) { return PSdizhi[index]; }
+    static String getPSJieQi(int index) { return PSjieqi[index]; }
 }

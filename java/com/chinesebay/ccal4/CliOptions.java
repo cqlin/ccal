@@ -25,7 +25,7 @@ final class CliOptions {
 
     static CliOptions parse(String[] arguments, LocalDate today) {
         if (arguments.length > 5) {
-            throw new UsageException("ccal: Too many parameters.");
+            throw new UsageException(null);
         }
         int year = today.getYear();
         int month = today.getMonthValue();
@@ -37,13 +37,8 @@ final class CliOptions {
         int operands = 0;
 
         for (String argument : arguments) {
-            if (!argument.startsWith("-") || argument.length() == 1) {
-                int value;
-                try {
-                    value = Integer.parseInt(argument);
-                } catch (NumberFormatException exception) {
-                    throw new UsageException("ccal: Invalid numeric value: " + argument);
-                }
+            if (!argument.startsWith("-")) {
+                int value = parseOperand(argument);
                 if (operands == 0) {
                     year = value;
                     singleMonth = false;
@@ -57,7 +52,8 @@ final class CliOptions {
                 operands++;
                 continue;
             }
-            if (argument.length() != 2) {
+            // ProcessArg in ccal.cpp selects options by their first letter.
+            if (argument.length() < 2) {
                 throw new UsageException("ccal: Unrecognized option.");
             }
             switch (argument.charAt(1)) {
@@ -92,12 +88,34 @@ final class CliOptions {
             encoding = 'g';
         }
         if (month < 1 || month > 12) {
-            throw new UsageException("ccal: Invalid month value: month 1-12.");
+            throw new UsageException("ccal: Invalid month value: month 1-12.", false);
         }
         if (year < 1645 || year > 7000) {
-            throw new UsageException("ccal: Invalid year value: year 1645-7000.");
+            throw new UsageException("ccal: Invalid year value: year 1645-7000.", false);
         }
         return new CliOptions(year, month, singleMonth, outputMode, encoding, traditionalChinese);
+    }
+
+    private static int parseOperand(String argument) {
+        // Match atoi followed by assignment to C++'s short year/month fields.
+        int index = 0;
+        while (index < argument.length()) {
+            char value = argument.charAt(index);
+            if (value != ' ' && (value < '\t' || value > '\r'))
+                break;
+            index++;
+        }
+        boolean negative = index < argument.length() && argument.charAt(index) == '-';
+        if (index < argument.length() && (argument.charAt(index) == '+' || negative))
+            index++;
+        int value = 0;
+        while (index < argument.length()) {
+            char digit = argument.charAt(index++);
+            if (digit < '0' || digit > '9')
+                break;
+            value = value * 10 + digit - '0';
+        }
+        return (short) (negative ? -value : value);
     }
 
     boolean traditionalChinese() {
@@ -106,9 +124,15 @@ final class CliOptions {
 
     static final class UsageException extends IllegalArgumentException {
         private static final long serialVersionUID = 1L;
+        final boolean showUsage;
 
         UsageException(String message) {
+            this(message, true);
+        }
+
+        UsageException(String message, boolean showUsage) {
             super(message);
+            this.showUsage = showUsage;
         }
     }
 }

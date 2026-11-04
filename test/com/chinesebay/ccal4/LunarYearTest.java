@@ -31,11 +31,16 @@ final class LunarYearTest {
                 "2033 includes the documented leap eleventh month");
 
         // 2201 is outside the embedded 1900-2100 reference table and
-        // exercises the self-contained astronomy fallback.
+        // exercises the original NOVAS calculation instead of the cache.
         LunarYearData year2201 = LunarYear.forYear(2201);
         Assertions.equalsInt(24, year2201.solarTerms.length,
                 "fallback astronomy provides all solar terms");
         Assertions.isTrue(year2201.newMoons.length >= 12 && year2201.newMoons.length <= 13,
                 "fallback astronomy provides a valid number of new moons");
+
+        double[] terms7000 = SolarTerms.forYear(7000);
+        Assertions.near(CalendarMath.julianDate(7000, 3, 20, 12.0),
+                CalendarMath.wholeDay(terms7000[5]), 0.0,
+                "year 7000 spring equinox matches ccal.exe on March 20");
     }
 }

@@ -67,28 +67,12 @@ public class PsMonth {
             }
             sb.append(String.format("1234 SFC (%d) SC ct ", nstart));
             sb.append(PSbigmchar[15][0]);
-            sb.append(PSbigmchar[21][0]); // This index is out of bounds for PSbigmchar.
-                                        // PSbigmchar has 22 elements (0-21).
-                                        // The C++ version has PSbigmchar[21][5] which would be the 22nd element.
-                                        // The Java translation of PSbigmchar has 22 elements (0-21).
-                                        // PSbigmchar[21] is "m1b ". The C++ code should have access to it.
-                                        // Let's assume PSbigmchar[21] is the correct index for "m1b "
-                                        // But the C++ code has PSmiscchar[21] = "Shi(Start)"
-                                        // C++: PSbigmchar[21][5]
-                                        // This means the C++ code should be using PSbigmchar[21] from the PSbigmchar array.
-                                        // The current Java is PSbigmchar[21][0].
-
-            // Looking at the C++ PSbigmchar[22][5], index 21 has the value "m1b ".
-            // Looking at CcalData.java, PSbigmchar is defined to have 21 elements [0-20], so [21] is out of bounds.
-            // This is a discrepancy between the C++ definition size and the Java definition size.
-            // C++: char PSbigmchar[22][5]
-            // Java: public static String[][] PSbigmchar = new String[21][5]; //Placeholder
-            // This placeholder is incorrect. It should be [22][1] as each element is a single string.
-            // I need to correct PSbigmchar definition in CcalData.java
+            sb.append(PSbigmchar[21][0]);
         }
 
         String result = sb.toString();
-        System.arraycopy(result.toCharArray(), 0, monname, 0, Math.min(result.length(), monname.length));
+        result.getChars(0, result.length(), monname, 0);
+        monname[result.length()] = 0;
     }
 
     public static void Number2DayPS(int nday, char[] dayname) {
@@ -114,19 +98,23 @@ public class PsMonth {
         sb.append(PSmiscchar[nday][0]);
 
         String result = sb.toString();
-        System.arraycopy(result.toCharArray(), 0, dayname, 0, Math.min(result.length(), dayname.length));
+        result.getChars(0, result.length(), dayname, 0);
+        dayname[result.length()] = 0;
     }
 
     public static void PrintHeaderPS(String titlestr, boolean bIsSim, boolean bNeedsRun) {
         boolean bYear = false;
-        if (titlestr.startsWith("Year")) {
+        if (titlestr.startsWith("Year"))
             bYear = true;
-        }
-
-        System.out.printf("%%!PS-Adobe-3.0 EPSF-3.0\n%%%%Title: Chinese Calendar for %s\n", titlestr);
-        System.out.printf("%%%%Creator: ccal-%s by Zhuo Meng, http://thunder.cwru.edu/ccal/\n", Verstr.versionstr);
-        String formattedDate = new SimpleDateFormat("EEE MMM dd HH:mm:ss yyyy").format(new Date());
-        System.out.printf("%%%%CreationDate: %s\n", formattedDate);
+        System.out.printf(java.util.Locale.ROOT, "%%!PS-Adobe-3.0 EPSF-3.0\n%%%%Title: Chinese Calendar for %s\n",
+               titlestr);
+        System.out.printf(java.util.Locale.ROOT, "%%%%Creator: ccal-%s by Zhuo Meng, http://thunder.cwru.edu/ccal/\n", "2.5.3");
+        // Match ctime: English names and a space-padded day of month.
+        Date now = new Date();
+        System.out.printf(java.util.Locale.ROOT, "%%%%CreationDate: %s %2d %s\n",
+               new SimpleDateFormat("EEE MMM", java.util.Locale.US).format(now),
+               Integer.parseInt(new SimpleDateFormat("d", java.util.Locale.US).format(now)),
+               new SimpleDateFormat("HH:mm:ss yyyy", java.util.Locale.US).format(now));
         if (bYear) {
             System.out.print("%%BoundingBox: 24 297 583 738\n");
             System.out.print("%%DocumentNeededResources: font Times-Bold Bookman-Light\n");
@@ -140,9 +128,9 @@ public class PsMonth {
         System.out.print("/B {bind def} def\n/dpif {72 600 div} B\n");
         System.out.print("/xdf {exch def} B\n");
         System.out.print("/m {dpif mul exch dpif mul exch moveto} B\n");
-        if (bYear) {
+        if (bYear)
             System.out.print("/SF {/b xdf /s xdf b 0 gt {/Times-Bold}{/Bookman-Light} ifelse\n");
-        } else {
+        else {
             System.out.print("/SFC {/s xdf /Times-Bold findfont s scalefont setfont} def\n");
             System.out.print("/SC {100 128 rmoveto show 0 -128 rmoveto} def\n");
             System.out.print("/SF {/b xdf /s xdf b 0 gt {/Times-Bold}{/Bookman-Demi} ifelse\n");
@@ -164,7 +152,7 @@ public class PsMonth {
             System.out.print("gsave newpath x y m currentpoint translate\n");
             System.out.print("newpath rpts 0 moveto w ppts 4 sub rpts sub dup dup 0 lineto rpts rpts -90 0 arc\n");
             System.out.print("w ppts 4 sub h ppts 4 sub rpts sub lineto currentpoint exch pop rpts 0 90 arc\n");
-            System.out.print("rpts h ppts 4 sub lineto rpts rpts rpts 90 180 arc\n");
+            System.out.print("rpts h ppts 4 sub lineto rpts h ppts 4 sub rpts sub rpts 90 180 arc\n");
             System.out.print("0 rpts lineto rpts rpts rpts 180 270 arc closepath} def\n");
             System.out.print("/Fcolor {1 0.9 1 K} B\n");
             System.out.print("/F {RR Fcolor fill grestore} def\n");
@@ -253,8 +241,8 @@ public class PsMonth {
             System.out.print("/nR {xfac 2 gt {xfac}{2} ifelse} B\n");
         }
         if (bYear) {
-        	PrintHeaderMonthPS("", (short)0, false, bIsSim, bNeedsRun, 6);
-            System.out.printf("gsave 30 300 moveto currentpoint translate\n");
+            PrintHeaderMonthPS(null, 0, false, bIsSim, bNeedsRun, 6);
+            System.out.print("gsave 30 300 moveto currentpoint translate\n");
             System.out.print("% Grid lines\ngsave 0.9 0.9 1 K 3 ppts setlinewidth\n");
             System.out.print("newpath 0 2236 m 546 0 rlineto stroke\n");
             System.out.print("newpath 0 1086 m 546 0 rlineto stroke\n");
@@ -262,14 +250,23 @@ public class PsMonth {
             System.out.print("newpath 272 399 moveto 0 -398 rlineto stroke\n");
             System.out.print("newpath 412 399 moveto 0 -398 rlineto stroke\n");
             System.out.print("grestore\n");
-            System.out.print("% Year heading\n28 1 SF\n");
-            System.out.printf("2030 3450 m (%s) S\n", titlestr.substring(5)); // Assumes "Year XXXX" format
+            System.out.printf(java.util.Locale.ROOT, "%% Year heading\n28 1 SF\n2030 3450 m (%s) S\n", titlestr.substring(5));
         }
     }
 
-    public static void PrintHeaderMonthPS(String monthhead, short month, boolean bSingle,
-                                          boolean bIsSim, boolean bNeedsRun, int nWeeks) {
-        if (!bSingle || (monthhead != null && monthhead.contains("m12 ")) ||
+    /* Inputs:
+       monthhead, string header for the monthly calendar if bSingle is
+                  true, don't care otherwise
+       month, month number for the monthly calendar if bSingle is
+              true, don't care otherwise
+       bSingle, true for single month, false for whole year
+       bIsSim, true for simplified characters, false for traditional characters
+       bNeedsRun: true if character Run is needed, false otherwise
+       nWeeks: number of week lines in month
+    */
+    public static void PrintHeaderMonthPS(String monthhead, int month, boolean bSingle,
+                            boolean bIsSim, boolean bNeedsRun, int nWeeks) {
+        if (!bSingle || monthhead.contains("m12 ") ||
             month == 2 || month == 3) {
             System.out.print("/m02 {{<~Pop&tz\"Q0F@!9aJ(!9aE!!'gO#!+5e#!-eKC!0R=a!3cH*\"3^aI\"+1*U\"$?R\"![Ib^\n");
             System.out.print("![Ig1\")n;)\"\"445!qZNk![IgE![Ik1\"0;Se\"'bqq!uqD>!.4lF!1X-F!42hf!6t[/!:0eM!UKnN\n");
@@ -290,7 +287,8 @@ public class PsMonth {
                 System.out.print("<~!!*0*,Qe2q!sL:Z!<XSN!@.ak\"T\\]/+p0\"m\"![sq!t#~>}U NC} B\n");
             } else {
                 System.out.print("/m03 {{<~Pop(Zz\"Q0F@!@.^h!CQth!F,[3!HnMQ!L*Wo!TX:j!TX9G!CQsQ!Fu4Q!IOoq!L<b:\n");
-                System.out.print("!OMlX!TX93!TX7M!<<,h!?_Bh!B:)3!E&pQ!H8%o!tYIf!n75f!iuCk!Z1q,!Z1rg!lP+i!fR1'!@.^h!/(=t!5JS&!5JZ+!It6A!It5r!Or2m!OW!?!OMq5\n");
+                System.out.print("!OMlX!TX93!TX7M!<<,h!?_Bh!B:)3!E&pQ!H8%o!tYIf!n75f!iuCk!Z1q,!Z1rg!lP+i!fR/i\n");
+                System.out.print("!b_V!!Z1s&!Z1tI!pfss!jD_s!fR1'!@.^h!/(=t!5JS&!5JZ+!It6A!It5r!Or2m!OW!?!OMq5\n");
                 System.out.print("!OMrN!Rq41!MBP1!I+^6!5nu,!/(He!/:T$!/L^9!/L[L!/LX_!/:Jk!/(=t!5J\\i!It9*!It7t\n");
                 System.out.print("!5J[^!5J\\i!e:@a\"$cr\"\"$cpl!e:?V!e:@a!_<B/!e:?*!e:?B\"$cpX\"$cjV\"$cjF\"$?R7\"#L\"*\n");
                 System.out.print("\"\"XFq!rW+F!iQ*T!iQ*D!p'Dq!t>6)\"!@Rl\"%<2I\"'kmn\")%[2\"*+BI\"*afb\"*ag%\"*aoe\".TIL\n");
@@ -298,31 +296,31 @@ public class PsMonth {
                 System.out.print("!5J[J!It7`!It6U!5JZ?!5J[J~>\n");
                 System.out.print("<~!!*0*,Qe2q!sL:Z!@7gO,m,=p!@.aJ,Qe&m\"!RmN,6]Cr+p@um!s'YL$3~>}U NC} B\n");
             }
-            if (bSingle && (monthhead != null && monthhead.contains("m13 ")))
+            if (bSingle && monthhead.contains("m13 "))
                 System.out.print("/m13 {gsave 1 1 nR {m03 NNC bf} for grestore WNC} B\n");
         }
         if (bSingle) {
             System.out.print("/m14 {gsave 1 1 nR {m04 NNC bf} for grestore WNC} B\n");
             System.out.print("/m15 {gsave 1 1 nR {m05 NNC bf} for grestore WNC} B\n");
             System.out.print("/m06 {{<~Pop'Sz\"Q0F@!>kl#!X&Qe!X&O;!>kiN!>kl#!@S'\"!;Ze0!6bNX!1X,A!,M_*!(I$,\n");
-            System.out.print("!%\\1J!&OaF!,2LP!0[JK!3u[5!71es!:Bp^!=T&M!X&TF!X&R$!>kl7!8IWt!8[c>!8mnu!8mlk\n");
+            System.out.print("!%\\1J!&OaF!,2LP!0[JK!3u[5!71es!:Bp^!=T&M!X&TF!X&R$!>kl7!8IWt!8[c>!8mn;!8mlk\n");
             System.out.print("!%\\.a!)*Da!+Z+,!.FrJ!1X'h!X&O'!X&MU!X&M/!Wi@F!WW3G!^m#R!^Qfq!^HaC!^Haq!^Hcc\n");
             System.out.print("\"4R?N\",HuR\"&&`/!^Hd\"!^HfL\")J$$\"!dr,!osDZ!^Hf`!^Hi-\"0_kI\")%dQ\"\"47*!>knm!A+CM\n");
-            System.out.print("!C?l>!E]G_!IP!>!@S'\"~>\n");
+            System.out.print("!C?m+!E]G_!IP!>!@S'\"~>\n");
             System.out.print("<~!!+>I!?q[L+pB4o\"X4$P+p.uN\"YTr]+p//~>}U NC} B\n");
             System.out.print("/m16 {gsave 1 1 nR {m06 NNC bf} for grestore WNC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("m17 ")) || month == 1 ||
+        if (!bSingle || monthhead.contains("m17 ") || month == 1 ||
             month == 7 || month == 12) {
             System.out.print("/m07 {{<~Pop';z\"Q0F@!Rq1\\!'gUq!+5kq!/(EL!Rq1H!R:a<!P\\[-!N#mn!K7%Y!FPp;!?_Bh\n");
             System.out.print("!8mj?!0I7h!&O[8!&ss,!4i/.!?qN)!H8%q!PJLb!Up,d!XJiu![7[)!`/oK!g!F.!mgqe!uq;h\n");
             System.out.print("\"*=N6\",6eh\"/GpB\"3^am\"3^b(\"&&]t!pBXT!ho]r!a>]:!\\+6l!Y>E`!Y>F/\"4.+F\",$aF\"&&d+\n");
             System.out.print("!Y>FC!Y>Hi!\\a_T!RLqu!R_(G!Rq3?!Rq1\\~>\n");
             System.out.print("<~!!+>I,6\\/q\"ToqP-j'V[~>}U NC} B\n");
-            if (bSingle && (monthhead != null && monthhead.contains("m17 ")))
+            if (bSingle && monthhead.contains("m17 "))
                 System.out.print("/m17 {gsave 1 1 nR {m07 NNC bf} for grestore WNC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("m18 ")) || month == 1 ||
+        if (!bSingle || monthhead.contains("m18 ") || month == 1 ||
             month == 5 || month == 7 || month == 11) {
             System.out.print("/m08 {{<~Pop'Wz\"Q0F@!UKmo!UKg1!UKf`!T*mA!QG,*!NZ9f!J(6@!CQp`!CQpP!LWq8!QG+B\n");
             System.out.print("!R(Np!Xo&m!\\+1d![n&U![n/$!_`]h!U'X0!U9cW!UKnl!UKmo!Ajkr!A\";J!?M;i!=Am%!;6I6\n");
@@ -330,11 +328,11 @@ public class PsMonth {
             System.out.print("!Ajkr!gj&%!fR2b!m(LY!r)gK!uM(6\"#p=u\"&K#[\"(2.=\")n8s\"+UD#\"-N[O\"/>m$\"0)BF\"/Z*`\n");
             System.out.print("\"/5h$\"-!?3\")%`9\"%!&=!rW17!gj&%~>\n");
             System.out.print("<~!!*0G\"ToqP,6J)M,6\\/o\"Tnc--3X_~>}U NC} B\n");
-            if (bSingle && (monthhead != null && monthhead.contains("m18 ")))
+            if (bSingle && monthhead.contains("m18 "))
                 System.out.print("/m18 {gsave 1 1 nR {m08 NNC bf} for grestore WNC} B\n");
         }
         if (bSingle) {
-            if (monthhead != null && monthhead.contains("m19 ")) {
+            if (monthhead.contains("m19 ")) {
                 System.out.print("/m09 {{<~Pop'%z\"Q0F@!8ISH!5nm0!3uV\"!2onu!1a,r!1!Wu!0R@*!0.(3!0%\"?!0@4N!0R@\\\n");
                 System.out.print("!1X'r!3?39!5&>U!71al!9aH*!<<.<!>#9?!>ki2!?_D$!?M7\\!>GP1!=8bY!;6E&!87FA!58G[\n");
                 System.out.print("!2T[1!0@1o!.\"WV!-eKY!/LVu!13b<!2fgZ!4Dm'!5nlG!7:eo!8ISH~>\n");
@@ -351,7 +349,7 @@ public class PsMonth {
             System.out.print("!4W*K!1Esa!.4h(!*fPH!/U_e!5JV,!<<-G!7Ckp!0$u1!&+C4!&ss0!13ap!9jKb!A\"6[!Drjh\n");
             System.out.print("!H8%m!K$lm!M]Xk!O;^$!Or-D!PJKb!Or-s!NH/#!Lj*&!I4\\l!CQrJ!Ghe\"!KI3m!NZ@,!QY>`\n");
             System.out.print("!JggP!H8+m!;$?F!=8iX!?)&O!@S&+!D!<c~>\n");
-            System.out.print("<~!!+>I!sKkN!<XYP!<XML\"![sO\"X4$L,m,=p,m+;O,QeA~>}U NC} B\n");
+            System.out.print("<~!!+>I!?q[L-3XJs\"TncO\"!Rmp!sJ]-,6\\)M\"X4$P\"![sO-3YXs\"To)~>}U NC} B\n");
             System.out.print("/m1b {gsave 1 1 nR {m0b NNC bf} for grestore WNC} B\n");
             System.out.print("/n11 {gsave 1 1 nR {n01 NNC bf} for grestore WNC} B\n");
             System.out.print("/n12 {gsave 1 1 nR {n02 NNC bf} for grestore WNC} B\n");
@@ -359,15 +357,15 @@ public class PsMonth {
             System.out.print("/n14 {gsave 1 1 nR {n04 NNC bf} for grestore WNC} B\n");
             System.out.print("/n15 {gsave 1 1 nR {n05 NNC bf} for grestore WNC} B\n");
             System.out.print("/n16 {gsave 1 1 nR {n06 NNC bf} for grestore WNC} B\n");
-            if (monthhead != null && monthhead.contains("n17 "))
+            if (monthhead.contains("n17 "))
                 System.out.print("/n17 {gsave 1 1 nR {n07 NNC bf} for grestore WNC} B\n");
-            if (monthhead != null && monthhead.contains("n18 "))
+            if (monthhead.contains("n18 "))
                 System.out.print("/n18 {gsave 1 1 nR {n08 NNC bf} for grestore WNC} B\n");
-            if (monthhead != null && monthhead.contains("n19 "))
+            if (monthhead.contains("n19 "))
                 System.out.print("/n19 {gsave 1 1 nR {n09 NNC bf} for grestore WNC} B\n");
-            if (monthhead != null && monthhead.contains("n1a "))
+            if (monthhead.contains("n1a "))
                 System.out.print("/n1a {gsave 1 1 nR {n0a NNC bf} for grestore WNC} B\n");
-            if (monthhead != null && monthhead.contains("t00 ")) {
+            if (monthhead.contains("t00 ")) {
                 System.out.print("/t00i {{<~Pop';z\"Q0F@![%NR\"!doW\"!dnd\"(2.g\"'P`<\"'>V&\"'>Y%\",I%m\"%WNm\"!dtr!:0f8\n");
                 System.out.print("!3cQu!3u\\l!42ga!42fT!42eF!3uX6!3cK'!9aH*!9aHn!UKis!UKi3!U9[Y!U'M?![IbB![.Pl\n");
                 System.out.print("![%L9![%NR!9aMq!UKo!!UKlX!9aKS!9aMq![%SU\"!dtZ\"!dr<![%Q7![%SU!9aK?!UKlD!UKj2\n");
@@ -375,7 +373,7 @@ public class PsMonth {
                 System.out.print("<~!!+;H\"XO6p\"X=*Q!sJ]N!s'YL!@.aJ,QeA~>}U NC} B\n");
                 System.out.print("/t00 {gsave 1 1 nR {t00i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t01 ")) {
+            if (monthhead.contains("t01 ")) {
                 System.out.print("/t01i {{<~Pop';z\"Q0F@!0dRn!42hn!6bO9!9OAW!<`Ku!al+(!GDO&!8%=B!3uW)!/gjd!/(@(\n");
                 System.out.print("!1j2!!4Mrm!8RX.!>#6a\"\"XG*\")\\*n\".T@_\"1/'P\"-rr:\",$[>\"+C7\\\"*Xc$\"*+ES\")n:B\"'>T*\n");
                 System.out.print("\"'#@n\"&K\")\"%iR[\"%*(6\"\"jSe!t51>!@RrX!;uo-!9+!r!7h/(!6P<2!87Gn!<rR2!AX\\J!J1@Q\n");
@@ -383,7 +381,7 @@ public class PsMonth {
                 System.out.print("<~!!*0*\"![sO,6\\/n\"Tp\"R,6J8~>}U NC} B\n");
                 System.out.print("/t01 {gsave 1 1 nR {t01i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t02 ")) {
+            if (monthhead.contains("t02 ")) {
                 System.out.print("/t02i {{<~Pop'cz\"Q0F@!Z2!C\"\"XMX\"\"XG^\"\"XGF\"!R`0!tG<q!r;n]!mL_4!f-iL!f-i8!mgpp\n");
                 System.out.print("!rW+*!tYGh\"\"4.5\"$?QV\"&&\\u\"'bh>\"(VC^\"(VD)\"(VJ#\",m;g\"&K'g\"!drd!Z2!W!ZV;Y\"2\"_P\n");
                 System.out.print("\"*=XP\"$cs=!'C@6!*fV6!-A<V!0..t!3?9=!TX?!!T4$t!8IXo!13iG!1Etc!1X*M!1X(W!1X&a\n");
@@ -392,14 +390,14 @@ public class PsMonth {
                 System.out.print("<~!!+8G+pA&n\"Y0ZY,Qf4o,6J)O-3X_~>}U NC} B\n");
                 System.out.print("/t02 {gsave 1 1 nR {t02i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t03 ")) {
+            if (monthhead.contains("t03 ")) {
                 System.out.print("/t03i {{<~Pop&hz\"Q0F@!B:(P!B:(<!Jg`)!OMi7!PACd!SdZ7!V?@\\!X8X,!Z(iO![%Jn![%K1\n");
                 System.out.print("![%SM\"3:RL\"*apL\"$?[)!&t(\"!*B>\"!,r$B!/^k`!2p!)!TX>f!TX6r!TX6W!S.7<!PAE\"!MKL\\\n");
                 System.out.print("!HeC2!B:(P~>\n");
                 System.out.print("<~!!*0H\"XX<T+p0\"m$3~>}U NC} B\n");
                 System.out.print("/t03 {gsave 1 1 nR {t03i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t04 ")) {
+            if (monthhead.contains("t04 ")) {
                 System.out.print("/t04i {{<~Pop(8z\"Q0F@\"*=O!!tG=5!keTq!e:;*!m1P'!sAYm\"\"XLQ\"'>V<!q68m!pTi<!o*iR\n");
                 System.out.print("!lb9[!j;Xb!fR/W!aGb:!\\OMd!Yths!Yb^g\"1SEb\"(VK^\"\"XN?!Yb_&!YGMX!Y>H6!Y>Hi!\\a_P\n");
                 System.out.print("!R(Ym!R:eG!R_'T!S@J?!;$?Z!3cPB!4;ls!4)_E!3-'a!2'?&!-nR4!&O[4!'C60!1!V:!6YB)\n");
@@ -410,7 +408,7 @@ public class PsMonth {
                 System.out.print("<~!!+8I+p0%n,Qe2o!sKkN+pA&m\"ToqP\"!n*Q\"T\\]O\"UY~>}U NC} B\n");
                 System.out.print("/t04 {gsave 1 1 nR {t04i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t05 ")) {
+            if (monthhead.contains("t05 ")) {
                 System.out.print("/t05i {{<~Pop'9z\"Q0F@!4W$m!3uTi!71^_!>#6M\"&&]6\"'GVC\")S$Y\",Hr#\"/5dA\"1\\Dn\"3^bT\n");
                 System.out.print("\"/,_6\",[*b\",Hu.\"*=Qo\"*=Pq\")n83\")7ha\"(M>8\"&],m\"#p:V!AFML!<iJ!!:Tuu!:U!H!:U%L\n");
                 System.out.print("!q67N!q66_\"#'cf\"\"F@5\"\"45E\"\"47>\"%WN!!tYR!!osGs!0@:r!3cPr!6>7=!9+)[!<<4$!q6:k\n");
@@ -418,7 +416,7 @@ public class PsMonth {
                 System.out.print("<~!!*6*,6\\/n\"TnoR!sKtQ\"XF0R$3~>}U NC} B\n");
                 System.out.print("/t05 {gsave 1 1 nR {t05i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t06 ")) {
+            if (monthhead.contains("t06 ")) {
                 System.out.print("/t06i {{<~Pop(\\z\"Q0F@!0dS)!1!^0!13i6!13h:!13g=!0RB4!/LZ!!.=ka!*fN(!$hOu!&O[(\n");
                 System.out.print("!-S?u!2'>R!3uVj!5ei+!6kQ4!71d.!7Cq'!7V)(!7V*1\"1/.i\")J'i\"#pBV!ZV;9!\\jdc!]^@+\n");
                 System.out.print("!]1\"<!\\OSK!Y#7B!RLqu!QYAe!Smj\\!UBiS!V->I!Vcb=!WE10!X&U!!8IZM!0dS)!V?Gl!=/b*\n");
@@ -430,7 +428,7 @@ public class PsMonth {
                 System.out.print("<~!!+;J\"![sp\"!RmN+pB.m!@\\*S,Qe2P\"ToqP!sKnO\"Y9`Z!@.aJ,6J)V~>}U NC} B\n");
                 System.out.print("/t06 {gsave 1 1 nR {t06i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t07 ")) {
+            if (monthhead.contains("t07 ")) {
                 System.out.print("/t07i {{<~Pop(2z\"Q0F@!AFTU!?_I9!C?k-!E]Dl!FPtH!GDO$!I\"T!!KI4B!Mfca!O)W)!O)WC\n");
                 System.out.print("!O)W\\!Mfdi!KI5k!I\"Ul!E]Ee!AFTU!OMsY!NZCA!QG5@!SIR<!TX?3!U^&)!VQUl!W3$R!.Y/*\n");
                 System.out.print("!2'E*!4W+J!7Crh!:U(1\"+UIn\"#L*r!r)jO!Y>Gf![Rq0!\\sjO!]C-k!]gF2!\\OS;!YPU2!VQW(\n");
@@ -441,14 +439,14 @@ public class PsMonth {
                 System.out.print("<~!!*0J\"T\\]L\"X4$P,Qf7p!?q[k!sKqP\"Tno1\"XsNt\"To)~>}U NC} B\n");
                 System.out.print("/t07 {gsave 1 1 nR {t07i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t08 ")) {
+            if (monthhead.contains("t08 ")) {
                 System.out.print("/t08i {{<~Pop''z\"Q0F@!uM-U!pB`Z!gWq?![7_[!NlN!!A4I7!2K]J!2K]6!AO[#!MKTI!V?IR\n");
                 System.out.print("!V?Er!)N_\"!,qu\"!/L[B!29M`!5JX)!V?E^!V?AF!/LW.!2om.!5JSN!87El!;HP5\",m5!\"$ck!\n");
                 System.out.print("!rr=S!\\aV-!\\aZE\"2\"[(\")n<,\"#'cZ!\\aZY!\\a^E!n%0W\"#pBt\"(24E!uM-U~>\n");
                 System.out.print("<~!!+8I!sKnO\"XF0R.K]hV$3~>}U NC} B\n");
                 System.out.print("/t08 {gsave 1 1 nR {t08i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("t09 ")) {
+            if (monthhead.contains("t09 ")) {
                 System.out.print("/t09i {{<~Pop)5z\"Q0F@!.Y.s!-eS_!2'Dd!5&BY!6tYA!8dj'!:U&2!<N=c!>>O=!=]+S!:U'N\n");
                 System.out.print("!7CrH!3H>8!.Y.s!]1##![%T`!]:'d!`/t0!ce@n!g<\\U!jr)J!n[QL!r;sL\"#0i\\\"+1.%\"-`iW\n");
                 System.out.print("\"0hn1\"4RA\\\"4RAh\"-`j5\"'u$g\"#L'W!so$E!p'K<!ltG=!r)i5\"\"XN0\"(VK.\",m<^\"&K(b\"#'fi\n");
@@ -458,11 +456,10 @@ public class PsMonth {
                 System.out.print("!QY:P!OVqR!K[<I!EoK7!@%T#!6tRM!*fL`!+5dT!5\\_!!>YZ?!EoJV!M0:m!R:]%!UKh,![[pH\n");
                 System.out.print("!a>Z_!f?un!k86'!o<p)!rN%!!uV(l\"\"aL'\"#p9Q\"%!!$\"#U(7!tYI4!pTd/!fR-Q!V?CD!XJg;\n");
                 System.out.print("\"+UD_\"$?U_!t53T!Xo*S!Yb[8!Z;$q!ZV7U!pft&!iuH&!e:>#!?_Fl!GDOJ!Mok>!S@KJ~>\n");
-                System.out.print("<~!!+GL\"Y9`Z!<XML,m,Cr+p.iJ\"XF0N,m>Ut\"ToqP!sKtQ\"ToqP+p.im\"![sO,6]7n\n");
-                System.out.print("-j9VR+p@uL,6]Cr+pA&n\"UY~>}U NC} B\n");
+                System.out.print("<~!!*0I\"T\\]N\"TotQ+p0%n+p0\"m!@Isn\"TnoQ!sKkN\"ToqP\"\"+6u!sKqP\"UY~>}U NC} B\n");
                 System.out.print("/t09 {gsave 1 1 nR {t09i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d00 ")) {
+            if (monthhead.contains("d00 ")) {
                 System.out.print("/d00i {{<~Pop';z\"Q0F@!0@;=!3cQ=!6>7]!9+*&!<<4D!rN.B![%QS!U'U?!U9`^!UKl&!UKkA\n");
                 System.out.print("!&Oa2!)s\"2!,M]R!/:Op!2KZ9!UKk-!UKg-!UKf_!T3sB!QkD,!ODcj!JCH@!B^@X!B^@D!KdA)\n");
                 System.out.print("!PJJ2!Pe[`!X/Qe![n%X![n&9![n*i\"3^fd\")n<`\"#'d1![n+(![n+t!`T5c!\\a\\W!f-pB!mh#c\n");
@@ -470,14 +467,14 @@ public class PsMonth {
                 System.out.print("<~!!*0*,6J)n!sKkN+pA&m\"XjHs\"X=*V~>}U NC} B\n");
                 System.out.print("/d00 {gsave 1 1 nR {d00i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d01 ")) {
+            if (monthhead.contains("d01 ")) {
                 System.out.print("/d01i {{<~Pop&tz\"Q0F@!N6&:!pB\\&!mCY/!K[;G!N6&:!/L_j!2ouj!6bOE!It8O!Ghfg!0dO9\n");
                 System.out.print("!42e9!8%>i!GhfS!DEKX!&+D;!)NZ;!,)@[!.k3$!2'=B\"4.$u\",Hru\"&o8b!t50o\"$?ZJ\"'bq1\n");
                 System.out.print("\"!du1!rN.6!/L_j!Pee:!rN.\"!pB\\:!NZ>R!Pee:~>\n");
                 System.out.print("<~!!+>I!@n6U.0BSr!t#~>}U NC} B\n");
                 System.out.print("/d01 {gsave 1 1 nR {d01i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d02 ")) {
+            if (monthhead.contains("d02 ")) {
                 System.out.print("/d02i {{<~Pop(pz\"Q0F@!<<0P!Q5$j!Q5#G!<</-!<<0P!W3!M!ltEo!ltDL!W2u*!W3!M!W2tk\n");
                 System.out.print("!ltD8!ltBf!W2sD!W2tk!<<.n!Q5#3!Q5!a!<<-G!<<.n!2ot;!6>5;!8mp[!;Zc$!>kmB!Q5&D\n");
                 System.out.print("!Q5%)!<<0d!5nqH!6,'l!6>3,!6>20!6>13!6,$H!5nlq!<<,h!<<-3!ltBR!ltB&!sAW%!s&EO\n");
@@ -490,7 +487,7 @@ public class PsMonth {
                 System.out.print("<~!!+>I!@.aJ,Qe&m!s&K-,Qf4o,m+<#!s&Q-+pA&L\"!n*O!sKnO+pA&P,6K1p+p//~>}U NC} B\n");
                 System.out.print("/d02 {gsave 1 1 nR {d02i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d03 ")) {
+            if (monthhead.contains("d03 ")) {
                 System.out.print("/d03i {{<~Pop(,z\"Q0F@!2'Ct!2'AF!29Lm!1X(I!/pr/!5JV#!6kOH!>,?k!K7'7!JCJs!Ghc`\n");
                 System.out.print("!Cd(S!?V<E!6kLc!)NYX!*B4T!;->'!EfDt!JCI<!NlGW!Q5\"r!Q5$6!Q5&P!U'U7!Jgg\\!K$r[\n");
                 System.out.print("!K7(W!K7'O!B^D.!<</-!8%=J!8%B1!C-`\\!K$tc!O`)H!TF3,!X8aX![Il$!Sddu!R(YO!N#sf\n");
@@ -500,7 +497,7 @@ public class PsMonth {
                 System.out.print("<~!!*0*\"![sO+pB1n+pA&m\"ToqP!sJ]L\"!RmN+pB:q\"Tno1\"To)~>}U NC} B\n");
                 System.out.print("/d03 {gsave 1 1 nR {d03i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d04 ")) {
+            if (monthhead.contains("d04 ")) {
                 System.out.print("/d04i {{<~Pop(6z\"Q0F@!;lq(\"/H$(\"'br(\"\"47j!<<4@!5J]$!5\\h-!5ns8!6,)E!65.P!5ejB\n");
                 System.out.print("!4i2q!3cJI!.b-O!%\\+,!&ss,!.\"W^!3#t(!5nm2!8[`;!:Bl@!;$<C!;Q[D!;lnt!;lq(!D!:9\n");
                 System.out.print("!GDP9!It6Y!La)\"!Or3@\"&K'/!t58/!o*k$!D!:9!H8$`!MBEL!Pe\\7!X\\p^!e:9p!dk\"'!OMig\n");
@@ -511,7 +508,7 @@ public class PsMonth {
                 System.out.print("<~!!+AJ,6\\/o\"T\\]/,Qe&L\"XF0q\"TotQ\"![sq!sKkN\"UY~>}U NC} B\n");
                 System.out.print("/d04 {gsave 1 1 nR {d04i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d05 ")) {
+            if (monthhead.contains("d05 ")) {
                 System.out.print("/d05i {{<~Pop'/z\"Q0F@!;lpq!o*lS!o*iR!;lmp!;lpq!5J\\m!5\\h?!5nqY!5nle!58Gq!8RWp\n");
                 System.out.print("!?_Aa\"#L\"\"\")IsW\"-`e?\"0;L0\",$ZZ\"*\">:\"*=R&\"(2.g\"'kpc\"'5L!\"&8jK\"%3-s\"\"jSM!t51.\n");
                 System.out.print("!C-X`!=]%'!;6E#!;liT!;lm\\!o*i>!o*hK!uM(N!u1kp!u(g)!u(i\"\"#L*Z!qZSR!mh$[!<<44\n");
@@ -519,7 +516,7 @@ public class PsMonth {
                 System.out.print("<~!!+>I!?q[L+pA&m\"TnoR!sKtQ$3~>}U NC} B\n");
                 System.out.print("/d05 {gsave 1 1 nR {d05i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d06 ")) {
+            if (monthhead.contains("d06 ")) {
                 System.out.print("/d06i {{<~Pop'-z\"Q0F@!ZV3Q!ZV6j\"2k5i\"*akq\"$?VJ!ZV7)!ZV:J\")J&F\"!dtN!pB_+!?;1]\n");
                 System.out.print("!Cd0-!GMY'!JCQJ!AFW*!>#?\\!:BqC!6bN6!3$%(!.Fug!)*GJ!*B:J!2'C0!8[de!>GVA!T4%c\n");
                 System.out.print("!T4\"B!&+H;!)N^;!,)D[!.k7$!2'AB!T4\".!T3sZ!T3s?!T!ff!SdZ'![%J6!Z_8e!ZV36!ZV3Q\n");
@@ -527,15 +524,15 @@ public class PsMonth {
                 System.out.print("<~!!+PO\"ToqP!sKqP\"X4$P!sK#~>}U NC} B\n");
                 System.out.print("/d06 {gsave 1 1 nR {d06i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d07 ")) {
+            if (monthhead.contains("d07 ")) {
                 System.out.print("/d07i {{<~Pop'Gz\"Q0F@!SdZ'![%J6!Z_9(!ZV4p!ZV7a!\\=Bq!au+E!mgr4\"*ag=\",-`o\"/,_G\n");
                 System.out.print("\"3^bp\"3^c+\"!.ID!h'.)!^Hf0\"1/+P\")%aP\"\"XL1!ZV7u!ZV:B\")%c:!uqD:!pB_#!ZV:V!ZV;q\n");
                 System.out.print("!^Hjd!Sde,!T!p#!T4&:!T4%o!1X-*!5&C*!7V)J!:Bph!=T&1!T4%[!T4#=!)N_V!,quV!/L\\!\n");
                 System.out.print("!29N?!5JX]!PAIZ!Fu4a!9+\"X!&stC!'C77!:Bj<!I=c@!T4\"B!T3u6!T!gI!SdZ'~>\n");
-                System.out.print("<~!!*0G\"Y0ZY,Qf4o,6J)O\"X4$m\"T]kP!s'YN!s'YN!s'YN!t#~>}U NC} B\n");
+                System.out.print("<~!!*0*\"!RmN\"Y9`Z+p.uo!sJc1\"!RmU~>}U NC} B\n");
                 System.out.print("/d07 {gsave 1 1 nR {d07i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d08 ")) {
+            if (monthhead.contains("d08 ")) {
                 System.out.print("/d08i {{<~Pop'Iz\"Q0F@!4W+n!4i6o!5&An!5&@i!5&?c!4i2U!4W%@!;$:;!;$;2!V?D3!V?C(\n");
                 System.out.print("!V-5`!Up(3!\\aU6!\\FC`!\\=>r!\\=@k\"\"41h\"\"41$\"(VF#\"(;4]\"(20?\"(22s\",$a^\"%WM^!uqC[\n");
                 System.out.print("!\\=Ej!\\=G8!_`^#!Up3@!V->Y!V?Ir!V?I2!;HX5!4W+n!;$?r!V?Hs!V?Fi!;$=h!;$?r!\\=EV\n");
@@ -543,7 +540,7 @@ public class PsMonth {
                 System.out.print("<~!!+8I,6J)O\"X=*Q-NaMr!s'YL!@.aJ,Qe&m!t#~>}U NC} B\n");
                 System.out.print("/d08 {gsave 1 1 nR {d08i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d09 ")) {
+            if (monthhead.contains("d09 ")) {
                 System.out.print("/d09i {{<~Pop'kz\"Q0F@!'gX2!+5n6!/q\"n!It8c!It6u!:U':!42h&!4Ds?!4W)\"!4W'\"!4W%!\n");
                 System.out.print("!4DlU!42_k!:0\\b!:0]Q!tYI\"!tYGl\"%WDg\"%<4*\"%30H\"%33l\")%b[\"!dsK!rN,H!d\"Lj!d\"NX\n");
                 System.out.print("\"3:RX\"*apX\"$cs5!'gX2!OMrB!^Hj$!^Hh6!OMpT!OMrB!:0d\"!It6a!IY#-!DigA!;HSF!<<.B\n");
@@ -553,7 +550,7 @@ public class PsMonth {
                 System.out.print("<~!!+DK+pB7p\"XsNS,Qe&L\"TnoP!sJcP\"XO6O,QeA~>}U NC} B\n");
                 System.out.print("/d09 {gsave 1 1 nR {d09i NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d0a ")) {
+            if (monthhead.contains("d0a ")) {
                 System.out.print("/d0ai {{<~Pop(Hz\"Q0F@!k8?J!iuL2!o=$A!s/RC!u:u6\"\"FC(\"$-N+\"%WM@\"'#FS\"'bpj\"'u(/\n");
                 System.out.print("\"().H\"&T/N\"#L+C!u;!6!pp)q!k8?J\"+UB9\"#'_`!pTdR!jD\\f!o3m!!sSe3\"\"F?F\"&8nY\")S*G\n");
                 System.out.print("\",I\"h\"!drH!uqAj!t#*&!q67(!n@>(!jr'&!g!G!!b_V3!`/qB!_<CN\"2Fur\")n>n\"#L)O!_<Cb\n");
@@ -564,7 +561,7 @@ public class PsMonth {
                 System.out.print("<~!!*0J\"T]hO\"![sp!sKkN\"X4$n\"ToqP-3GFq\"!n*p!t#~>}U NC} B\n");
                 System.out.print("/d0a {gsave 1 1 nR {d0ai NNC bf} for grestore WNC} B\n");
             }
-            if (monthhead != null && monthhead.contains("d0b ")) {
+            if (monthhead.contains("d0b ")) {
                 System.out.print("/d0bi {{<~Pop(8z\"Q0F@!NZCA!R:e@!U'W6!Vcb!!XJl`!Z(qf![\\\"3!]1!S!]gEn!]C.,!\\sk>\n");
                 System.out.print("!X8b/!OMsU!NZCA!'C?3!*fU3!-A;S!0.-q!3?8:!O)Y?!Jgg!!F>hh!Ajjm!=8fp!9aJ:!71cu\n");
                 System.out.print("!;HTQ!>5G#!BU>X!HJ5E!N6&0!T=(q!ZV7]!MfaN!>,>Q!+Z)f!,)AZ!D!4p!Y#0u!k8;j!oO-M\n");
@@ -576,15 +573,12 @@ public class PsMonth {
                 System.out.print("/d0b {gsave 1 1 nR {d0bi NNC bf} for grestore WNC} B\n");
             }
         }
-        String jiestr = "";
+        String jiestr;
         if (!bSingle)
             month = 1;
-        // strcpy(jiestr, PSjieqi[(month - 1) * 2]);
-        // strcat(jiestr, PSjieqi[(month - 1) * 2 + 1]);
-        // Java equivalent:
-        jiestr = PSjieqi[(month - 1) * 2][0] + PSjieqi[(month - 1) * 2 + 1][0];
-
-        if (!bSingle || (jiestr.contains("j00 "))) {
+        jiestr = PSjieqi[(month - 1) * 2][0];
+        jiestr += PSjieqi[(month - 1) * 2 + 1][0];
+        if (!bSingle || jiestr.contains("j00 ")) {
             System.out.print("/j00 {{<~Pop'Uz\"Q0F@!NZCI!MBP5!QkM,!TjJn!V-=N!WE0.!Y5A8![\\!n!^$QM!^6]l!\\+:s\n");
             System.out.print("!Ytm$!UKok!NZCI!,)H3!/L^3!2'DS!4i6q!8%A:\"/H\"^\"&o@^!uM+;!,)H3!>klk!=/aS!@S\"-\n");
             System.out.print("!C$VT!DWZs!F,Y;!G)9g!GDKL!GVW/!H\\>.!JUUJ!LEfd!M]Z.!NH/S!O)T!!NH0B!LNn`!JLR(\n");
@@ -592,7 +586,7 @@ public class PsMonth {
             System.out.print("\"&&]j!]U1U!cS/c!ic:2!pB\\n~>\n");
             System.out.print("<~!!*0I\"T\\]/,Qe&L-3XDo!sKkN\"XF0R$3~>}U NC} B\n");
         }
-        if (!bSingle || (jiestr.contains("j01 "))) {
+        if (!bSingle || jiestr.contains("j01 ")) {
             System.out.print("/j01 {{<~Pop(Vz\"Q0F@!PecP\"$?Y#!r)j#!ltGm!QY>l!R_&A!Smhm!U'VF\"-`mI\"&&fI!uM,6\n");
             System.out.print("!UKn^!VlhN!X8b&!Yba<!PAN]!PAN2!O`)U!NZAs!+Z1*!/(G*!2ouZ!N6)[!MBN0!L<fZ!K7*0\n");
             System.out.print("!/L^+!2ot+!6bM[!JCNi!HA1(!FPtJ!Dii\"!%\\1R!)*GR!,r!-!CQuW!<E5c!20F]!$hSE!%7k9\n");
@@ -603,7 +597,7 @@ public class PsMonth {
             System.out.print("!l4kV!l+fk!l+hq~>\n");
             System.out.print("<~!!+>I\"XF0R!sKqP\"XF0R,Qe2P+pA&n\"TotQ,Qe2N,Qe&m!s'\\M+pB7p\"UY~>}U NC} B\n");
         }
-        if (!bSingle || (jiestr.contains("j02 "))) {
+        if (!bSingle || jiestr.contains("j02 ")) {
             System.out.print("/j02 {{<~Pop(`z\"Q0F@!dk!@!dk!,!l4ka!pK\\k!qZIL\"!.G1\"$$?\\\"%3-$\"&8i?\"&o8_\"&o9-\n");
             System.out.print("\"&o>h\"*amS\"#pAW!t57L!Xo.K!Xo05\"3:RH\"+UKP\"&&f5!&t's!*B=s!,r$>!/^k\\!2p!%!S@KV\n");
             System.out.print("!S@Il!7V(g!13iS!1Et_!1X*A!1X(M!1X&X!1En:!13aK!71^N!71eO!S@IX!S@Fd!S.8@!Rq*C\n");
@@ -614,7 +608,7 @@ public class PsMonth {
             System.out.print("!kn[>!m^lk!mUg-!kJD/!i?!0!e:<!!_<?V!^HdB~>\n");
             System.out.print("<~!!*0H\"Y0ZY,Qf4o,6J)O\"X4$m\"T]kP!s'YN!s'YN!s'YN!t#~>}U NC} B\n");
         }
-        if (!bSingle || (jiestr.contains("j03 "))) {
+        if (!bSingle || jiestr.contains("j03 ")) {
             System.out.print("/j03 {{<~Pop'[z\"Q0F@!S@Lu!SRXL!Sdct!SdcB!Sd[r!Sd[L!RLh.!P/8o!M]XY!I4[4!B^@T\n");
             System.out.print("!B^@@!K7#+!O_u5!PAC`!Vl^U!Z1oJ!Z1p=!Z2!k!c7t<!oX.C\"*=O)\"+1*Q\".B5+\"4.%d\"4.%p\n");
             System.out.print("\"&]-g!nmZh!b_Wt!jVlF!pfuS!u:sF\"$Zk7\"(;8i\"+112\"#pB2!u1n1!mLeK!al(+!_!0J!\\shj\n");
@@ -622,7 +616,7 @@ public class PsMonth {
             System.out.print("!.Y-,!1EtJ!4W)h!D!9N!?_Ee!5\\aZ!&+D/!'C7/~>\n");
             System.out.print("<~!!*6*+pA&m\"ToqP\"![sO,6]7n!<jbO\"Tno1$3~>}U NC} B\n");
         }
-        if (!bSingle || (jiestr.contains("j04 "))) {
+        if (!bSingle || jiestr.contains("j04 ")) {
             if (bIsSim) {
                 System.out.print("/j04 {{<~Pop)Yz\"N1G]!D!;@!GDQ@!It7`!La*)!Or4G\"4RDe\"-`mq\"(23Z!D!;@!Z1ql!RLjl\n");
                 System.out.print("!Q>(A!NZ;S!JUUN!FGiH!B:(F!>#6I!>kfE!E&oW!JLNa!O)Rb!SRPa!W<$I!Z1ql!n76M!tG>T\n");
@@ -654,48 +648,48 @@ public class PsMonth {
                 System.out.print("<~!!+>I+pA&n\"Tp+U\"![sO+pB.m+pB=r\"T]kN\"XaBU+p0\"m,Qe2P-3XJq\"T]kN!@.aJ\n");
                 System.out.print("\"![t#!sKkN\"X4$P\"!RmN+pA;~>}U NC} B\n");
             } else {
-				System.out.print("/j04 {{<~Pop,`z\"Q0F@!:0d*!D!:1!D!9N!:0cG!:0d*!dk),!f-qL\"!@\\:!tYPL!qZQV!mC_Y\n");
-				System.out.print("!j2UX!gEcf!dk),!:U(1!@.b(!@.bT!JCP_!JCOl!Or4_!OW\"n!OMr*!OMr:!`/u,!Yba0!UKo1\n");
-				System.out.print("!OMrN!OMs!!RLqQ!It:%!J1EV!JCQ8!JCPs!@.bh!@.c7!B^Ic!:U*;!:g6%!;$A]!;$A8!'gX.\n");
-				System.out.print("!+5n.!-eTN!0RFl!3cQ5!;$A$!;$@c!:g4K!:U(1!g!N:!f@)c!dOm#!aGh\"!^6\\t![7^,!XJkG\n");
-				System.out.print("!Yb^G!]^>4!a#O!!cS5a!eLL;!gj&'!jDa%!f@&,!^m)i!Sd`1!T4#)!]gB>!f6tX!mC_!!rN+#\n");
-				System.out.print("\"#p?>\"+UFq\",-e;\".]Kb\"3:O;\"3:OG\")S*C\"!dqg!pfu]!u(gR\"#pAY\"'>Xr\"2\"_,\"+13(\"&oA-\n");
-				System.out.print("!gEdl!ji&o!mCbL!o*mZ!g!N:!42i)!2]i@!.4k'!&Ob1!'C=1!+l;&!0I?&!5&C2!Q5';!Pni5\n");
-				System.out.print("!P/>Q!NlK;!MTX$!KmLd!It5T!GqmB!E&u)!AFR_!AFRS!GDO+!JLS7!Jge\"!O)VR!QtO(!SRTO\n");
-				System.out.print("!U'Su!V$5]!V?H[!Yb_:!Sdc2!PedK!6>6R!7Cri!8mr+!:U(A!42i)!I+[U!K[B(!F,]q!CR\"A\n");
-				System.out.print("!:0d>!5&C\"!5&Ba!5&BI!5&B-!5&Af!4i5K!4W)4!:0c'!:0c3!D!9:!D!9*!IOrj!I4a$!I+[:\n");
-				System.out.print("!I+[U!6>04!<<-'!<<-?\"%3/8\"$$AD\"\"aM`\"!@T6!tkT_!rr=?!pBW)!mgpg!i,gA!b;:a!al\"M\n");
-				System.out.print("!k85:!os>L!os>,!t5/Y\"\"O@7\"$uuq\"'>PT\")ItM\"+1+X\"/#Z7\"(2.3\"$clH![%M#![%M[\"$cm'\n");
-				System.out.print("!seq'!osB4![%Mo![%NR\"#p=k!rrAo!o*h#![%Nf![%OM\"(VH=\"!dq9!rrBB!<`HD!6>3u!6P?O\n");
-				System.out.print("!6bJt!6bJ8!6bIQ!6P<k!6>04!8%;D!5JTV!2BOq!.k3B!+5ef!)`fJ!*0)A!*TA7!+c.;!-eKM\n");
-				System.out.print("!/^b]!1j1'!42`T!6G5*!87Fa!9aFP!8%;D!@.[3!BpM'!DWWl!E&oT!EK2<!F>b8!GhaL!I4Z^\n");
-				System.out.print("!J1;p!JUT-!K$l>!J^ZJ!Ib$S!H\\=Z!EfEV!A\"6G!@.[3!Q5!=!T=%7!V6<*!Vuel!WW4W!Xf!X\n");
-				System.out.print("!ZD&n![n&-!\\aV@!\\sbQ!]'h`!\\FDj![%Km!YPLo!VQNe!R(QQ!Q5!=!<<0,!UKjn!UKj2!<</E\n");
-				System.out.print("!<<0,!<</1!UKis!UKi;!<<.N!<</1!<<.:!UKi'!UKhD!<<-S!<<.:!d\"GK!g*KM!i,hE!j2O3\n");
-				System.out.print("!k//u!l=r!!mgq9!o3jO!os?c!os?s!os@.!o*e4!mUf2!l\"a/!i,i\"!dk\"_!d\"GK~>\n");
-				System.out.print("<~!!+>I!?qUi\"T]nO\"XaBU,Qe2o!sJc1!?q[L,6\\/o\"ToqP,Qe2P!<iQ/\"![sO,6]=p\n");
-				System.out.print("\"TncO\"!Rmp!sJ]M\"![sO,6]n++p@un\"TncO\"TncO\"TncN!s'YL!@.aJ,m=AX~>}U NC} B\n");
-				System.out.print("/j05 {{<~Pop+Wz\"Q0F@!=T'H!*fVB!.4lB!0dRb!3QE+!6bOI!=T'4!=T&9!&+K\\!)Na\\!,)H'\n");
-				System.out.print("!.k:E!2'Dc!Xo/&!R(X&!Ls5t!C-_m!C-`h!V?Ir!OMrr!Jgho!C-a'!C-aG!FQ#*!=/eW!=Aq>\n");
-				System.out.print("!=T'r!=T'H!4W*s!3?7_!4`0Y!5\\fS!6>5M!6kSF!7Cq9!8%@'!)s#M!-A9M!/ptm!2]g6!5nqT\n");
-				System.out.print("!=T$G!=T#P!'C<*!*fR*!-A8J!0.*h!3?51!=T#<!=T\"c!=Ak7!=/^b!CQsm!C6b*!C-\\H!C-\\p\n");
-				System.out.print("!X&Q5!Q5%5!L*X.!C-]/!C-^&!V?G0!Or30!Jgf-!E9,N!GMV&!I+[E!J1BY!K.#k!LNr*!N6(@\n");
-				System.out.print("!Ghi,!GMV^!EoQ)!C-^:!:0c;!<E7b!<rV$!;lo*!:^-/!87M*!4W*s\",I!E\")7lA\"'>UU\"&K&(\n");
-				System.out.print("\"%WKP\"%<:.\"%WLo\")J&R\"#'gJ!t58W!ji%T!ji&_!o*mJ!dk*o!e(6C!e:B%!e:Af!e:AR!e:A:\n");
-				System.out.print("!e:@u!X&TN![IjN!^$Pn!`fC7!d\"MU!e:@a!e:@>!dk'h!d\"L6!_rfr!\\FJ]!Y>FK!XJk7!]U7O\n");
-				System.out.print("!a#M\\!b_X_!a5Y+!^m)F![[sY!XAbk!SRRn!MBId!NZ<d!TjEi!Z(me!^6YY!b;?K!eCD6!gEao\n");
-				System.out.print("!jMet!ltEs!n[Pm!pB[f!qZNs!rN*@!sAZa!s/Nr!ql[t!pThu!mUji!i,mR!j2U9!ji$m!ji%@\n");
-				System.out.print("!u(hK!u(gP!uD#h\"!.M?\"!dpj\"#^2S\"&o<P\"*\"@K\"-rtY\"2k5%\"3:M9\"1SB>\"0_gL\"0_gc\"0_h$\n");
-				System.out.print("\"181K\"2Ft/\"0_i#\",I!E!)NZ;!-A2h!0.%=!:p1[!MTQl!`/l'!n[Kb\"#p9s\"&],%\")%[(\"*sr&\n");
-				System.out.print("\",d.#\".9-5\"/Go\\\"0MW-\"/Z':\",m5/\"*\"=\"\"#'_P!ltAc!k\\NK!ndRX!r2hd!uq;o!Z1ob!Z1pe\n");
-				System.out.print("!rN&J!rN&.\"#L#-\"#0fO\"#'`q\"#'a<\"'>S#!uM&p!qZM(!Z1rK!Z1rW!]U4:!T4!c!TF-?!TX9'\n");
-				System.out.print("!TX8l!<`F6!6>1k!6P=B!6bHt!6bHT!6bH4!6P;c!6>/9!<<,8!<<,L!TX71!TX6.!>YZY!0@2&\n");
-				System.out.print("!)NZ;!<<-s!TX8X!TX7E!<<,`!<<-s!Z1r7!rN'q!rN&^!Z1q$!Z1r7~>\n");
-				System.out.print("<~!!+8G\"XF0R/-?%V\"!Rmm!sKqP\"Tno1\"XsNt\"Tno1+p@uk\"XaBr\"X4$P\"!RmN,6\\/s\n");
-				System.out.print("\"TotQ\"!Rmm!s&KN\"TnoS!sL%S\"X4$m\"XF0R!@.aJ,QeA~>}U NC} B\n");
+                System.out.print("/j04 {{<~Pop,`z\"Q0F@!:0d*!D!:1!D!9N!:0cG!:0d*!dk),!f-qL\"!@\\:!tYPL!qZQV!mC_Y\n");
+                System.out.print("!j2UX!gEcf!dk),!:U(1!@.b(!@.bT!JCP_!JCOl!Or4_!OW\"n!OMr*!OMr:!`/u,!Yba0!UKo1\n");
+                System.out.print("!OMrN!OMs!!RLqQ!It:%!J1EV!JCQ8!JCPs!@.bh!@.c7!B^Ic!:U*;!:g6%!;$A]!;$A8!'gX.\n");
+                System.out.print("!+5n.!-eTN!0RFl!3cQ5!;$A$!;$@c!:g4K!:U(1!g!N:!f@)c!dOm#!aGh\"!^6\\t![7^,!XJkG\n");
+                System.out.print("!Yb^G!]^>4!a#O!!cS5a!eLL;!gj&'!jDa%!f@&,!^m)i!Sd`1!T4#)!]gB>!f6tX!mC_!!rN+#\n");
+                System.out.print("\"#p?>\"+UFq\",-e;\".]Kb\"3:O;\"3:OG\")S*C\"!dqg!pfu]!u(gR\"#pAY\"'>Xr\"2\"_,\"+13(\"&oA-\n");
+                System.out.print("!gEdl!ji&o!mCbL!o*mZ!g!N:!42i)!2]i@!.4k'!&Ob1!'C=1!+l;&!0I?&!5&C2!Q5';!Pni5\n");
+                System.out.print("!P/>Q!NlK;!MTX$!KmLd!It5T!GqmB!E&u)!AFR_!AFRS!GDO+!JLS7!Jge\"!O)VR!QtO(!SRTO\n");
+                System.out.print("!U'Su!V$5]!V?H[!Yb_:!Sdc2!PedK!6>6R!7Cri!8mr+!:U(A!42i)!I+[U!K[B(!F,]q!CR\"A\n");
+                System.out.print("!:0d>!5&C\"!5&Ba!5&BI!5&B-!5&Af!4i5K!4W)4!:0c'!:0c3!D!9:!D!9*!IOrj!I4a$!I+[:\n");
+                System.out.print("!I+[U!6>04!<<-'!<<-?\"%3/8\"$$AD\"\"aM`\"!@T6!tkT_!rr=?!pBW)!mgpg!i,gA!b;:a!al\"M\n");
+                System.out.print("!k85:!os>L!os>,!t5/Y\"\"O@7\"$uuq\"'>PT\")ItM\"+1+X\"/#Z7\"(2.3\"$clH![%M#![%M[\"$cm'\n");
+                System.out.print("!seq'!osB4![%Mo![%NR\"#p=k!rrAo!o*h#![%Nf![%OM\"(VH=\"!dq9!rrBB!<`HD!6>3u!6P?O\n");
+                System.out.print("!6bJt!6bJ8!6bIQ!6P<k!6>04!8%;D!5JTV!2BOq!.k3B!+5ef!)`fJ!*0)A!*TA7!+c.;!-eKM\n");
+                System.out.print("!/^b]!1j1'!42`T!6G5*!87Fa!9aFP!8%;D!@.[3!BpM'!DWWl!E&oT!EK2<!F>b8!GhaL!I4Z^\n");
+                System.out.print("!J1;p!JUT-!K$l>!J^ZJ!Ib$S!H\\=Z!EfEV!A\"6G!@.[3!Q5!=!T=%7!V6<*!Vuel!WW4W!Xf!X\n");
+                System.out.print("!ZD&n![n&-!\\aV@!\\sbQ!]'h`!\\FDj![%Km!YPLo!VQNe!R(QQ!Q5!=!<<0,!UKjn!UKj2!<</E\n");
+                System.out.print("!<<0,!<</1!UKis!UKi;!<<.N!<</1!<<.:!UKi'!UKhD!<<-S!<<.:!d\"GK!g*KM!i,hE!j2O3\n");
+                System.out.print("!k//u!l=r!!mgq9!o3jO!os?c!os?s!os@.!o*e4!mUf2!l\"a/!i,i\"!dk\"_!d\"GK~>\n");
+                System.out.print("<~!!+>I!?qUi\"T]nO\"XaBU,Qe2o!sJc1!?q[L,6\\/o\"ToqP,Qe2P!<iQ/\"![sO,6]=p\n");
+                System.out.print("\"TncO\"!Rmp!sJ]M\"![sO,6]n++p@un\"TncO\"TncO\"TncN!s'YL!@.aJ,m=AX~>}U NC} B\n");
+                System.out.print("/j05 {{<~Pop+Wz\"Q0F@!=T'H!*fVB!.4lB!0dRb!3QE+!6bOI!=T'4!=T&9!&+K\\!)Na\\!,)H'\n");
+                System.out.print("!.k:E!2'Dc!Xo/&!R(X&!Ls5t!C-_m!C-`h!V?Ir!OMrr!Jgho!C-a'!C-aG!FQ#*!=/eW!=Aq>\n");
+                System.out.print("!=T'r!=T'H!4W*s!3?7_!4`0Y!5\\fS!6>5M!6kSF!7Cq9!8%@'!)s#M!-A9M!/ptm!2]g6!5nqT\n");
+                System.out.print("!=T$G!=T#P!'C<*!*fR*!-A8J!0.*h!3?51!=T#<!=T\"c!=Ak7!=/^b!CQsm!C6b*!C-\\H!C-\\p\n");
+                System.out.print("!X&Q5!Q5%5!L*X.!C-]/!C-^&!V?G0!Or30!Jgf-!E9,N!GMV&!I+[E!J1BY!K.#k!LNr*!N6(@\n");
+                System.out.print("!Ghi,!GMV^!EoQ)!C-^:!:0c;!<E7b!<rV$!;lo*!:^-/!87M*!4W*s\",I!E\")7lA\"'>UU\"&K&(\n");
+                System.out.print("\"%WKP\"%<:.\"%WLo\")J&R\"#'gJ!t58W!ji%T!ji&_!o*mJ!dk*o!e(6C!e:B%!e:Af!e:AR!e:A:\n");
+                System.out.print("!e:@u!X&TN![IjN!^$Pn!`fC7!d\"MU!e:@a!e:@>!dk'h!d\"L6!_rfr!\\FJ]!Y>FK!XJk7!]U7O\n");
+                System.out.print("!a#M\\!b_X_!a5Y+!^m)F![[sY!XAbk!SRRn!MBId!NZ<d!TjEi!Z(me!^6YY!b;?K!eCD6!gEao\n");
+                System.out.print("!jMet!ltEs!n[Pm!pB[f!qZNs!rN*@!sAZa!s/Nr!ql[t!pThu!mUji!i,mR!j2U9!ji$m!ji%@\n");
+                System.out.print("!u(hK!u(gP!uD#h\"!.M?\"!dpj\"#^2S\"&o<P\"*\"@K\"-rtY\"2k5%\"3:M9\"1SB>\"0_gL\"0_gc\"0_h$\n");
+                System.out.print("\"181K\"2Ft/\"0_i#\",I!E!)NZ;!-A2h!0.%=!:p1[!MTQl!`/l'!n[Kb\"#p9s\"&],%\")%[(\"*sr&\n");
+                System.out.print("\",d.#\".9-5\"/Go\\\"0MW-\"/Z':\",m5/\"*\"=\"\"#'_P!ltAc!k\\NK!ndRX!r2hd!uq;o!Z1ob!Z1pe\n");
+                System.out.print("!rN&J!rN&.\"#L#-\"#0fO\"#'`q\"#'a<\"'>S#!uM&p!qZM(!Z1rK!Z1rW!]U4:!T4!c!TF-?!TX9'\n");
+                System.out.print("!TX8l!<`F6!6>1k!6P=B!6bHt!6bHT!6bH4!6P;c!6>/9!<<,8!<<,L!TX71!TX6.!>YZY!0@2&\n");
+                System.out.print("!)NZ;!<<-s!TX8X!TX7E!<<,`!<<-s!Z1r7!rN'q!rN&^!Z1q$!Z1r7~>\n");
+                System.out.print("<~!!+8G\"XF0R/-?%V\"!Rmm!sKqP\"Tno1\"XsNt\"Tno1+p@uk\"XaBr\"X4$P\"!RmN,6\\/s\n");
+                System.out.print("\"TotQ\"!Rmm!s&KN\"TnoS!sL%S\"X4$m\"XF0R!@.aJ,QeA~>}U NC} B\n");
             }
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j06 "))) {
+        if (!bSingle || jiestr.contains("j06 ")) {
             System.out.print("/j06 {{<~Pop'sz\"Q0F@!I+^R!Diki!?hO4!:0c]!4Dr0!-nV[!&O`3!'C;/!0I<a!7q98!=f0]\n");
             System.out.print("!CR\"+!HnPT!Mfg.!QY@f!I+^R!g!M_!^m.3!`fD/!dFeK!ic=1!o!ck\"!I^p\"+1.A\"-*Ep\"0;PI\n");
             System.out.print("\"4RAt\"4RB+\",m:E\"%E?#!sA[q!l4rh!g*R6!d\"O/!g!M_!8IW0!;lm0!?_F`!Ls32!L*W!!IFiZ\n");
@@ -704,7 +698,7 @@ public class PsMonth {
             System.out.print("!osCg!sAZJ!mC^J!i,lO!8IW0~>\n");
             System.out.print("<~!!+8I\"!Rmm!s&KK\"ToqP!s'VK+pA&m\"TotQ\"![sp!t#~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j07 "))) {
+        if (!bSingle || jiestr.contains("j07 ")) {
             System.out.print("/j07 {{<~Pop)Kz\"Q0F@!OMmg!uM(\"!uM''!OMll!OMmg!OMlX!uM&h!uM%Y!OMkI!OMlX!IOqo\n");
             System.out.print("!Ib(C!It3F!It2!!It0P!Ib#N!IOkq!OMhp!OMk5!uM%E!uM$.!uM#p!t,*Z!qH>A!n[L'!jr#[\n");
             System.out.print("!f-i4!f-i$!o3ik!sns(!t5/X\"#^-:\"&&\\q\"&&]R\"&&aJ\"*=S5\"#'d)!sAZ\"!PAI.!IOqo!^$Q]\n");
@@ -717,7 +711,7 @@ public class PsMonth {
             System.out.print("!6tZr!87MZ!9aL_!;Zd/!=JuR!=o8m!<rX*!;lq:!7Ct0!/L`a~>\n");
             System.out.print("<~!!+>I!@.aJ+pB4o+pA&m\"XX<P+p.uo!sKqP\"Yg)_!<XPM\"\"+6Q\"!e$N\"!e$W~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j08 "))) {
+        if (!bSingle || jiestr.contains("j08 ")) {
             System.out.print("/j08 {{<~Pop(.z\"Q0F@!MBJ_!MBNK!Pee2!JCQ&!GDR;!5J\\=!/L`)!/^k0!/puu!/ptM!/ps$\n");
             System.out.print("!/^ed!/LXe!5JUh!5JVg!Ghdi!Ghcn!Mf`q!MKO;!MBIn!MBJ_!5J\\)!Ghj+!Ghgb!5JY`!5J\\)\n");
             System.out.print("!5JYL!GhgN!Ghe(!5JW&!5JYL!=Srb!>GM^!Fu1!!NH-?!TjBd![7X3!^m&T!_`Wr\"$?Uc\"$?S!\n");
@@ -726,7 +720,7 @@ public class PsMonth {
             System.out.print("!=Srb!`T8L\"$?[5\"$?X\\!`T5s!`T8L!`T5_\"$?XH\"$?V\"!`/p5!`B(\"!`T4i!`T5_~>\n");
             System.out.print("<~!!+DK+pB7p\"T]kN!@.aJ\"!Rmm\"!RmN+pB:q,R\"2o!s'VK\"UY~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j09 "))) {
+        if (!bSingle || jiestr.contains("j09 ")) {
             if (bIsSim) {
                 System.out.print("/j09 {{<~Pop(*z\"Q0F@!Fu;B!DW`[!@S%Z!:U(=!4W*t!.4jY!'C=A!(6m9!20Iq!=],.!Jgho\n");
                 System.out.print("!O)ZJ!Fu;B!aGht!`T8`!j2W*!p9Y9!r`97!u(h3\"\"46/\"#pA)\"%WL\"\"',K*\"(D>A\")\\1W\"*+Im\n");
@@ -755,7 +749,7 @@ public class PsMonth {
                 System.out.print("-j9VR+p@uL,6]Cr+pA&n\"UY~>}U NC} B\n");
             }
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j0a "))) {
+        if (!bSingle || jiestr.contains("j0a ")) {
             System.out.print("/j0a {{<~Pop(^z\"Q0F@!MBNK!>GVi!8%BM!87N/!8IYC!8IX3!8IW\"!87J+!8%=N!>GRM!>GRq\n");
             System.out.print("!H8)#!E]B(!Aab\"!<N9g!71`V!13cB!*B6*!+Z)*!/pog!4`*]!:0^b!?M7e!D!5`!GDLQ!Jgb;\n");
             System.out.print("!O;_3!U'O9!KmGO!;un4!%7h<!%\\+0!<rNu!N6!D!Y>@E!dF]m!q$%b\"*=N&\"*jlE\".9.&\"4R<q\n");
@@ -766,10 +760,10 @@ public class PsMonth {
             System.out.print("!g!G1!bqa-!^6W)!Xo)$!RUoc!MBH_!I+Wm~>\n");
             System.out.print("<~!!+8G+pB1n+pA&o\"TotQ\"![so!sKtQ\"XO6S,m+;Q\"T]kN!@.aJ,Qe&L+pA;~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j0b "))) {
+        if (!bSingle || jiestr.contains("j0b ")) {
             System.out.print("/j0b {m08} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j0c "))) {
+        if (!bSingle || jiestr.contains("j0c ")) {
             if (bIsSim) {
                 System.out.print("/j0c {{<~Pop*Xz\"Q0F@!V?IV!CR#P!Fu9P!IOtp!L<g9!OMqW!V?IB!V?Ht!V-<O!Up0+![Ij\"\n");
                 System.out.print("![Ijr!jDbT!jDaA!osF8!oX4O!oO.i!oO//\"2\"^a\"*aoa\"%WMV!oO/C!oO0>!sA_-!iuLJ!j2X,\n");
@@ -804,7 +798,7 @@ public class PsMonth {
                 System.out.print("-NsMQ,R\"2N,R\"M~>}U NC} B\n");
             }
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j0d "))) {
+        if (!bSingle || jiestr.contains("j0d ")) {
             System.out.print("/j0d {{<~Pop'[z\"Q0F@!&Oa\"!)s\"\"!,M]B!/:O`!2KZ)!;lm,!;lhe!8%:%!?;)-!B^@$\"*=N^\n");
             System.out.print("\"\"4/^!pfo?!B:(4!B:,h\"3:NP\"*alT\"#p?)!\\aZu!`B(_!a5Y.!_<B7!]:%>!X]\"6!QY>t!Pec`\n");
             System.out.print("!T4$Z!V?GP!W3\"B!X&R3!XSop!Xo,Q!&Oa\"!iuJ@\"3:Q]\"*ao]\"$cr>!iuJT!iuKO!n7=>!cS7[\n");
@@ -812,7 +806,7 @@ public class PsMonth {
             System.out.print("!Fu9L!Fu7j!Ls4i!Ls6/!d\"M]!d\"L2!iuI1!iuJ@~>\n");
             System.out.print("<~!!*0*/d!:$\"!RmN!@IsQ,Qe2o!sL(T$3~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j0e "))) {
+        if (!bSingle || jiestr.contains("j0e ")) {
             if (bIsSim) {
                 System.out.print("/j0e {{<~Pop(Nz\"Q0F@![%Q[!h]V1!h]SD![%Nn![%Q[!n7:e\"(22G\"(2/Z!n78#!n7:e!U'Q'\n");
                 System.out.print("![%N\"![%NZ!h]S0!h]Q?!hKC^!h969!n[K8!n@9o!n75F!n77d\"(2/F\"(2._\".0+V\"-ioK\"-`jQ\n");
@@ -836,7 +830,7 @@ public class PsMonth {
                 System.out.print("<~!!+PO\"ToqP!sL(T+pBJ!\"YKlX,Qe&m!s'YL!@.aJ\"!RmN\"XO6p\"ToqP\"\"\"0u!sK#~>}U NC} B\n");
             }
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j0f "))) {
+        if (!bSingle || jiestr.contains("j0f ")) {
             System.out.print("/j0f {{<~Pop(&z\"Q0F@!/pte!4W(=!71cb!;HU@!AFR+!GDNk!MTWV!T4#E!T3up!/pqp!3?2p\n");
             System.out.print("!5nn;!8[`Y!;lk\"!T3u\\!T3s&!&+Ct!)NYt!,)@?!.k2]!2'=&\"3^aU\"+1*U\"$cj2!ZV2b!ZV5C\n");
             System.out.print("\"*=QG\"!doG!pBZ$!ZV5W!ZV80!`9\"m!gs*i!qZP%!so#o!u_4c\"\"43X\"#U,K\"%*+U\"&]0t\"(20=\n");
@@ -845,21 +839,21 @@ public class PsMonth {
             System.out.print("!K$t7!Fu93!BpS9!>bg=!;HVW!9+'1!6YF_!3QB7!/pte~>\n");
             System.out.print("<~!!*0G\"X=*Q,Qe3\"\"\"\"0R,R#Ir\"TotQ$3~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j10 "))) {
-			System.out.print("/j10 {{<~Pop(jz\"Q0F@!AFV3!mCb&!mCa3!AFU@!AFV3!AFU,!mC`t!mC_u!AFT-!AFU,!MBI(\n");
-			System.out.print("!o*fe!o*eZ!Ghc>!Ghd1!MBI(!Ghc*!o*eF!o*d7!Ghap!Ghc*!;$>O!AFSN!AFSn!QY>\\!QkJ6\n");
-			System.out.print("!R(Uj!R(UM!5nqD!9=2D!?_G7!R(U9!R(T6!'C;O!*fQO!-A7o!0.*8!3?4V![%O!!Smd`!M0=T\n");
-			System.out.print("!Fu4U!AFPA!AX\\+!Ajgp!Ajgf!:0_U!0R@3!%7jV!&+EN!/LXc!8[`%!Ajg>!Ajf;!AXY4!AFL-\n");
-			System.out.print("!Gha4!Gha\\!o*d#!o*c4!uM#;!u1fZ!u(aZ!u(c8\"#p<p!qZMd!mC[i!QY:d!Y>C$!_i^.!e:=,\n");
-			System.out.print("\"3:Mu\"*akq\"#p>N!gE`T!kn^F!pftB!uqAE\"&&cH\")\\1&\",$`7\"$?Y7\"\"jYc!tGBu!nm]j!i?#_\n");
-			System.out.print("!ce>W!^HeU!X&Pn!X&Qq!i,lg!c.pk!^Hfl!X&R0!X&R\\!\\=DG!Up0/!mC_a!mC_5!setD!sJba\n");
-			System.out.print("!sA]G!sA^J\"\"XP5!pg$-!lP22!B:1O!;$B3!;6MT!;HY$!;HXI!;HWn!;6K6!;$>O~>\n");
-			System.out.print("<~!!+>I!@.aJ,m+/n!s'VK\"XaBU!sJcN\"ToqP,m+;r!sKqP+pA&m\"Y9`Z,m,=p$3~>}U NC} B\n");
+        if (!bSingle || jiestr.contains("j10 ")) {
+            System.out.print("/j10 {{<~Pop(jz\"Q0F@!AFV3!mCb&!mCa3!AFU@!AFV3!AFU,!mC`t!mC_u!AFT-!AFU,!MBI(\n");
+            System.out.print("!o*fe!o*eZ!Ghc>!Ghd1!MBI(!Ghc*!o*eF!o*d7!Ghap!Ghc*!;$>O!AFSN!AFSn!QY>\\!QkJ6\n");
+            System.out.print("!R(Uj!R(UM!5nqD!9=2D!?_G7!R(U9!R(T6!'C;O!*fQO!-A7o!0.*8!3?4V![%O!!Smd`!M0=T\n");
+            System.out.print("!Fu4U!AFPA!AX\\+!Ajgp!Ajgf!:0_U!0R@3!%7jV!&+EN!/LXc!8[`%!Ajg>!Ajf;!AXY4!AFL-\n");
+            System.out.print("!Gha4!Gha\\!o*d#!o*c4!uM#;!u1fZ!u(aZ!u(c8\"#p<p!qZMd!mC[i!QY:d!Y>C$!_i^.!e:=,\n");
+            System.out.print("\"3:Mu\"*akq\"#p>N!gE`T!kn^F!pftB!uqAE\"&&cH\")\\1&\",$`7\"$?Y7\"\"jYc!tGBu!nm]j!i?#_\n");
+            System.out.print("!ce>W!^HeU!X&Pn!X&Qq!i,lg!c.pk!^Hfl!X&R0!X&R\\!\\=DG!Up0/!mC_a!mC_5!setD!sJba\n");
+            System.out.print("!sA]G!sA^J\"\"XP5!pg$-!lP22!B:1O!;$B3!;6MT!;HY$!;HXI!;HWn!;6K6!;$>O~>\n");
+            System.out.print("<~!!+>I!@.aJ,m+/n!s'VK\"XaBU!sJcN\"ToqP,m+;r!sKqP+pA&m\"Y9`Z,m,=p$3~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j11 "))) {
+        if (!bSingle || jiestr.contains("j11 ")) {
             System.out.print("/j11 {m07} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j12 "))) {
+        if (!bSingle || jiestr.contains("j12 ")) {
             System.out.print("/j12 {{<~Pop)5z\"Q0F@![n-B!Z2\"2!Y>F1!W<(=!T4#W!Q\"mo!Or1P!Q\"mP!QtNN!SRSZ!U^!r\n");
             System.out.print("!WiE5!Y>DS!ZD,&![@bL![n,9![n-B!iuK_!mCbJ!c.t_!cA)u!c.qJ!bML3!abuo!`B&e!^6Wi\n");
             System.out.print("!\\+3l!Y#.o!U'Nr!Q\"hs!K@(g!D!2M!DEJA!JpeC!Pe\\H!Up)N![%KS!_!+W!al$Y!dXlZ!fd<$\n");
@@ -871,7 +865,7 @@ public class PsMonth {
             System.out.print("!0%##!+Gs_!&+EB!&O]6!/pq1!7Cn-!=/`,!=/]`!<rOl!<`BR!CQoY!C6^#!C-Y_!C-\\`~>\n");
             System.out.print("<~!!*0J\"T]eL,R\"8t\"Tp\"R+p0\"m!@.gq!sJcN\"TnoS\"!RmN+pA&P$3~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j13 "))) {
+        if (!bSingle || jiestr.contains("j13 ")) {
             if (bIsSim) {
                 System.out.print("/j13 {{<~Pop(Lz\"Q0F@!>#=J!QY>X!O)VW!K@,e!FPq-!AFPB!=Akt!:U%p!;ZbE!<iOq!>#=J\n");
                 System.out.print("!]0tk!Up0k!Q5&h!>kmf!A+Bk!B^HQ!Cd/n!D`f4!EfMN!Fu:g!=/e3!<iRW!;$@G!7V(W!42ef\n");
@@ -883,9 +877,6 @@ public class PsMonth {
                 System.out.print("<~!!*0H\"T]hM+pA&m\"Tp\"R\"!n*Q,R\"8N,R#Cp\"Tno1\"To)~>}U NC} B\n");
             } else {
                 System.out.print("/j13 {{<~Pop*\\z\"Q0F@\"#'eD\"$cpP\"(22C\"*amt\",[0<\".KAW\"0;Rl\"2\"^%\")n?!\"&K(*!V?I\"\n");
-                System.out.print("!V?Ij\"%35f!rrFf!mh$[!V?J)!V?JQ!ZV<@!Or6]!P/B/!PAMB!PAL?!9=4f!2'EF!29P7!2BU,\n");
-                System.out.print("!29N#!2'@m!13df!/^da!.+^[!*TAI!%7h,!&O[0!,_dU!1*\\j!3Q=o!5nmr!7:gt!7V%t!7h2r\n");
-                System.out.print("!8%@+!8%AF\"&o?o\"#'eD\"&&cP\"$?X@\"$$Er\"#L'R\"\"XL5\"!dpl!u1kS!rrB>![%O]!WiE?!V?F=\n");
                 System.out.print("!V?Ij\"%35f!rrFf!mh$[!V?J)!V?JQ!ZV<@!Or6]!P/B/!PAMB!PAL?!9=4f!2'EF!29P7!2BU,\n");
                 System.out.print("!29N#!2'@m!13df!/^da!.+^[!*TAI!%7h,!&O[0!,_dU!1*\\j!3Q=o!5nmr!7:gt!7V%t!7h2r\n");
                 System.out.print("!8%@+!8%AF\"&o?o\"#'eD\"&&cP\"$?X@\"$$Er\"#L'R\"\"XL5\"!dpl!u1kS!rrB>![%O]!WiE?!V?F=\n");
@@ -903,13 +894,13 @@ public class PsMonth {
                 System.out.print("+p@uk\"ToqP!sL\"R+pA&m\"X4$P!sK#~>}U NC} B\n");
             }
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j14 "))) {
+        if (!bSingle || jiestr.contains("j14 ")) {
             System.out.print("/j14 {{<~Pop''z\"Q0F@\"&o?G\"+112\"$?Z2!tYP/!JCOL!R(XD!W`CW![Il0!QYAe!PJT*!M'<m\n");
             System.out.print("!GDQ0!;HWj!5&CJ!58N)!5JX[!5JW6!5JUe!58H<!5&:g!;HOf!;HPi!uq<:!uq;+\"'>P&\"'#>U\n");
             System.out.print("\"&o;(\"&o?G!;HWV!uqC'!uq@.!;HT]!;HWV!;HTI!uq?o!uq<N!;HQ(!;HTI~>\n");
             System.out.print("<~!!+>I\"TnoP\"!Rmp!sJ]N!s'YL$3~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j15 "))) {
+        if (!bSingle || jiestr.contains("j15 ")) {
             System.out.print("/j15 {{<~Pop*Rz\"Q0F@!Ls3*!Or1Z!JCMR!GDNk!42ea!.Y,I!.k8(!/(C[!/(C6!/(Be!.k6>\n");
             System.out.print("!.Y)l!42c_!42cs!=/^r!=/[q!42`b!42b<!7V$#!.Y)H!.k4T!/(?f!/(?&!&st#!+5d`!,qp3\n");
             System.out.print("!9sQ/!RLhV!R(Pb!B:(X!B:*.!Pe^a!K[=e!H8'%!B:*B!B:+M!Ghe,!Ghda!MBIX!M'7j!Ls2?\n");
@@ -926,7 +917,7 @@ public class PsMonth {
             System.out.print("<~!!+AJ+pB@s\"X4$P.g#qU,Qe&L+p@up!sJcO\"ToqP,m+;s\"![sO,6\\)n!s'VK\"XsNW\n");
             System.out.print(",m,Fs!sJc1!@.aJ,Qe&m!s'YL$3~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j16 "))) {
+        if (!bSingle || jiestr.contains("j16 ")) {
             System.out.print("/j16 {{<~Pop)ez\"Q0F@\"#pAG\"%34K\")\\2X\"-s$G\"2\"^m\"+12u\"&oA%!XJm-![Rqb!\\FM+![%T4\n");
             System.out.print("!YPU;!V-?0!Pefi!Or6Y!S@LV!U9c?!Up1j!2'En!2'FA!0@;1!/1MH!-//e!*B=3!'LDU!'(,@\n");
             System.out.print("!)*IJ!+#`R!-/.j!/:R9!1Eu]!29Q.!2'EZ\"'bpn\"#pAG!E]E9!/L]h!2osh!6bMC!E]E%!E]Ck\n");
@@ -940,7 +931,7 @@ public class PsMonth {
             System.out.print("!_rb\"!_`V3!_EDB!^$KF![Ie=!Xo*3!TX8p!NZ<H~>\n");
             System.out.print("<~!!*0*,6K+n!sKnO,R#@o!A4Hu\"ToqP\"![sO+pB\\'\"XF0R!@.aJ,Qe&L-3XDP,m=V~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j17 "))) {
+        if (!bSingle || jiestr.contains("j17 ")) {
             System.out.print("/j17 {{<~Pop)[z\"Q0F@!:0a1!&O`#!)s!#!,M\\C!/:Na!2KY*!8%=^!3cK+!-/)8!$D93!%7i/\n");
             System.out.print("!-eLj!4`+G!:0_s!:0^H!9sQ1!9aD2!@.Y-!?hGt!?_C)!?_DJ!Die_!H\\>d!KI0\\!N,qR!Oi'c\n");
             System.out.print("!PSR9!Q5!c!P&4p!Ls0a!Ib&P!EB/3!?_D^!?_EQ!T4!g!Ls2c!H8(`!?_Ee!?_Fh!B^EC!9aJh\n");
@@ -955,7 +946,7 @@ public class PsMonth {
             System.out.print("<~!!+8G\"Tno1+pA&p\"XjHV!@7gO,m,=p!@.aJ,Qe&m!s'YL!<XML.0B`\"\"!n*Q\"TnoP\n");
             System.out.print("!s'YL!@.aJ,QeA~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j18 "))) {
+        if (!bSingle || jiestr.contains("j18 ")) {
             System.out.print("/j18 {{<~Pop)Kz\"Q0F@!_<E$\"!@\\R!qcX<!m1T/!h]V-!dXq)!a#O3!]U9I!^-WX!^Zuh!_<E$\n");
             System.out.print("!e:BO!]1#/!\\OS^!Z_Ar!WW<j!TF1a!PJQW!K[AM!LNqI!R_%[!X&So!\\=F-!^m+b!au/O!e^WJ\n");
             System.out.print("!]C*`!TaA/!K[?_!LNoW!Vuj/!`T4d!i,mJ!pftZ\"$-K)\"-<Qe\".]K7\"181a\"5!Z7\"5!ZC\")7m2\n");
@@ -969,7 +960,7 @@ public class PsMonth {
             System.out.print("<~!!*0H\"T\\]L\"TotQ\"![sO+pB4o\"T^.V\"X4$P,6J)n!sKqP\"Tno/,m>Ut+pA&P!<XPM\n");
             System.out.print("+p//~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j19 "))) {
+        if (!bSingle || jiestr.contains("j19 ")) {
             System.out.print("/j19 {{<~Pop(<z\"Q0F@!Jgj%!I+^7!EfM.!A\"<_!<*&:!6#\"a!.Y,)!/L\\!!8R]a!@e/T!H8,P\n");
             System.out.print("!K@0*!OVud!U'SU!J1@C!:^)e!&O^e!&O^Q!;$;D!K[?(!XJiQ!dFac!qHAH\"*aiW\",[,4\"/l6f\n");
             System.out.print("\"4.(A\"4.(Q\",-c`\"$Qb&!rN)M!kA?s!d+PS!\\a[D!cS3g!ji$F!rN-7\"!dt\"!osH\"!k8=t!K[CK\n");
@@ -979,7 +970,7 @@ public class PsMonth {
             System.out.print("!c%g]!_NKL![n):!VQPn!OMm?~>\n");
             System.out.print("<~!!+8I\"![sO,6\\/o\"XF0R!s'SJ+p@uL-3XDP,m=V~>}U NC} B\n");
         }
-        if (!bSingle || (monthhead != null && monthhead.contains("j1a "))) {
+        if (!bSingle || jiestr.contains("j1a ")) {
             System.out.print("/j1a {{<~Pop(Lz\"Q0F@!2KY.!5no.!8IUN!;6Gl!>GR5!q65h!q64=!5nmd!9=.d!;lj/!>Y\\M\n");
             System.out.print("!Ajfk!q64)!q62O!/po>!3?0>!5nk^!8[^'!;lhE!q62;!q61<\"\"XF7\"\"=4N\"\"4/k\"\"427\"&K#s\n");
             System.out.print("!t54o!pBZt!2KY.\"#'eP\"#p@P\"%WKp\"'boC\"*=Us\",m<N\"/Z.q\"2k95\"+UJ=\"'>X>!Y>GJ!Y>H]\n");
@@ -989,7 +980,7 @@ public class PsMonth {
             System.out.print("\"!@Z8\"!@ZL!`T6*!7V'8!7V'$!MBKF!MBKZ!7V'8!`T4d!`T4P\"\"44%\"\"449!`T4d~>\n");
             System.out.print("<~!!*0*,Qe2q!sKnO\"XF0N\"!Rmt!sKtQ,m=AS!sKkN!@.aJ,Qe&m!s'YL$3~>}U NC} B\n");
         }
-        System.out.printf("/BH {%d} def\n", 2250 / nWeeks);
+        System.out.printf(java.util.Locale.ROOT, "/BH {%d} def\n", 2250 / nWeeks);
         System.out.print("/Mf {gsave currentpoint translate\n");
         System.out.print("0 0 600 BH L\n600 0 600 BH L\n1200 0 600 BH L\n");
         System.out.print("1800 0 600 BH L\n2400 0 600 BH L\n3000 0 600 BH L\n");
@@ -1001,9 +992,9 @@ public class PsMonth {
             System.out.print("% Grids\n");
             int i;
             for (i = 0; i < 7; i++)
-                System.out.printf("%d 2250 600 150 F\n", (i * 600));
+                System.out.printf(java.util.Locale.ROOT, "%d 2250 600 150 F\n", (i * 600));
             for (i = 0; i < nWeeks; i++)
-                System.out.printf("0 %d m Mf\n", (i * 2250 / nWeeks));
+                System.out.printf(java.util.Locale.ROOT, "0 %d m Mf\n", (i * 2250 / nWeeks));
             System.out.print("% Month heading\n");
         }
     }
@@ -1011,4 +1002,5 @@ public class PsMonth {
     public static void PrintClosingPS() {
         System.out.print("grestore\nshowpage\n%%Trailer\n%%EOF\n");
     }
+
 }

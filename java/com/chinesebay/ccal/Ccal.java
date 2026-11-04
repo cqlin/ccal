@@ -1,4 +1,6 @@
 package com.chinesebay.ccal;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -39,6 +41,13 @@ public class Ccal {
 			System.out.println("\t-u:\tUses UTF-8 rather than GB or Big5 for Chinese output.");
 			System.exit(1);
 		}
+		String charset = result.nEncoding == 'g' ? "GB2312" : result.nEncoding == 'b' ? "Big5" : "UTF-8";
+		System.out.flush();
+		try {
+			System.setOut(new PrintStream(System.out, true, charset));
+		} catch (UnsupportedEncodingException e) {
+			throw new IllegalStateException("Required calendar output encoding is unavailable: " + charset, e);
+		}
 		if (result.month < 1 || result.month > 12) {
 			System.out.println("ccal: Invalid month value: month 1-12.");
 			System.exit(1);
@@ -47,8 +56,7 @@ public class Ccal {
 			System.out.println("ccal: Invalid year value: year 1645-7000.");
 			System.exit(1);
 		}
-		if (IsLeapYear(result.year))
-			daysinmonth[1] = 29;
+		daysinmonth[1] = (short) (IsLeapYear(result.year) ? 29 : 28);
 		List<Double> vterms = new ArrayList<>();
 		List<Double> vmoons = new ArrayList<>();
 		List<Double> vmonth = new ArrayList<>();
@@ -96,8 +104,9 @@ public class Ccal {
 		result.bSingle = true;
 		result.nEncoding = 'a';
 		boolean bIsUTF8 = false;
+		SetU8Characters(true);
 		if (argv.length == 0)
-			return false;
+			return true;
 		int nParam = 0;
 		for (int i = 0; i < argv.length; i++) {
 			if (argv[i].charAt(0) != '-') {
@@ -162,7 +171,13 @@ public class Ccal {
 		short[] month = new short[1];
 		char[] leap = new char[2];
 		GetMonthNumber(mnumber, month, leap);
-		System.out.printf(" [%2d]Y%1s ", month[0], " ");
+		System.out.printf(" [%2d]Y%c ", month[0], leap[0] == 0 ? ' ' : leap[0]);
+	}
+	private static String bufferString(char[] buffer) {
+		int length = 0;
+		while (length < buffer.length && buffer[length] != 0)
+			length++;
+		return new String(buffer, 0, length);
 	}
 	private static void PrintMonth(short year, short month, List<Double> vterms, double lastnew, double lastmon,
 			List<Double> vmoons, List<Double> vmonth, double nextnew, int pmode, boolean bSingle, int nEncoding,
@@ -245,7 +260,7 @@ public class Ccal {
 		else if (pmode == 2) { // Added braces for consistency
 			Number2MonthPS(vmonth.get(moncnt), nstartlm, ndayslm, !bSingle, cmonnameArr); // Uncommented
 		}
-		cmonname = new String(cmonnameArr).trim();
+		cmonname = bufferString(cmonnameArr);
 		// January is special if lunar New Year is in February
 		if (month == 1 && cmonth[0] != 1) {
 			int tiancnt0 = (cyear + 59) % 10;
@@ -266,28 +281,28 @@ public class Ccal {
 					GetMonthNumber(vmonth.get(moncnt + 1), cmonth1, leap1);
 					monthhead = String.format("%s %d (Year %s%s, Month %s%d%c S%d, Year %s%s, Month %s%d%c S%d)",
 							monnames[month - 1], year, CcalData.tiangan[tiancnt0][0], CcalData.dizhi[dicnt0][0],
-							new String(leap).trim(), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm,
+							bufferString(leap), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm,
 							CcalData.tiangan[tiancnt][0], CcalData.dizhi[dicnt][0],
-							new String(leap1).trim(), cmonth1[0], (ndayslm1 == 30) ? 'D' : 'X', nstartlm1);
+							bufferString(leap1), cmonth1[0], (ndayslm1 == 30) ? 'D' : 'X', nstartlm1);
 				} else if ((pmode == 0 && nEncoding != 'a') || pmode == 1) {
 					Number2MonthCH(vmonth.get(moncnt + 1), nstartlm1, ndayslm1, nEncoding, cmonname1Arr);
-					cmonname1 = new String(cmonname1Arr).trim();
+					cmonname1 = bufferString(cmonname1Arr);
 					monthhead = String.format("%s %d%s%s%s%s%s%s%s%s%s%s%s",
 							monnames[month - 1], year, sp, sp, CHtiangan[tiancnt0][0], CHdizhi[dicnt0][0],
 							CHmiscchar[16][0], cmonname, CHmiscchar[19][0], CHtiangan[tiancnt][0],
 							CHdizhi[dicnt][0], CHmiscchar[16][0], cmonname1);
 				} else if (pmode == 3) {
 					Number2MonthCH(vmonth.get(moncnt + 1), nstartlm1, ndayslm1, nEncoding, cmonname1Arr);
-					cmonname1 = new String(cmonname1Arr).trim();
+					cmonname1 = bufferString(cmonname1Arr);
 					monthhead = String.format("%s%s%s%s%s%s%s%s%s",
 							CHtiangan[tiancnt0][0], CHdizhi[dicnt0][0],
 							CHmiscchar[16][0], cmonname, CHmiscchar[19][0], CHtiangan[tiancnt][0],
 							CHdizhi[dicnt][0], CHmiscchar[16][0], cmonname1);
 				} else if (bSingle) {
 					Number2MonthPS(vmonth.get(moncnt + 1), nstartlm1, ndayslm1, !bSingle, cmonname1Arr); // Uncommented
-					cmonname1 = new String(cmonname1Arr).trim();
+					cmonname1 = bufferString(cmonname1Arr);
 					monthhead = String.format("20 1 SF (%s %d) S\n/fsc 21 def gsave ptc\n" +
-							"%s%s%s%s%sgrestore",
+							"%s%s%s%s%s\n%s%s%s%s%sgrestore",
 							monnames[month - 1], year, PsMonth.PSbigmchar[20][0], PsMonth.PStiangan[tiancnt0][0],
 							PsMonth.PSdizhi[dicnt0][0], PsMonth.PSbigmchar[16][0], cmonname, PsMonth.PSbigmchar[19][0],
 							PsMonth.PStiangan[tiancnt][0], PsMonth.PSdizhi[dicnt][0], PsMonth.PSbigmchar[16][0],
@@ -298,7 +313,7 @@ public class Ccal {
 				if (pmode == 0 && nEncoding == 'a') {
 					monthhead = String.format("%s %d (Year %s%s, Month %s%d%c S%d)",
 							monnames[month - 1], year, CcalData.tiangan[tiancnt0][0], CcalData.dizhi[dicnt0][0],
-							new String(leap).trim(), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm);
+							bufferString(leap), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm);
 				} else if ((pmode == 0 && nEncoding != 'a') || pmode == 1) {
 					monthhead = String.format("%s %d%s%s%s%s%s%s",
 							monnames[month - 1], year, sp, sp, CHtiangan[tiancnt0][0],
@@ -332,24 +347,24 @@ public class Ccal {
 					GetMonthNumber(vmonth.get(moncnt + 1), cmonth1, leap1);
 					monthhead = String.format("%s %d (Year %s%s, Month %s%d%c S%d, %s%d%c S%d)",
 							monnames[month - 1], year, CcalData.tiangan[tiancnt][0], CcalData.dizhi[dicnt][0],
-							new String(leap).trim(), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm,
-							new String(leap1).trim(), cmonth1[0], (ndayslm1 == 30) ? 'D' : 'X', nstartlm1);
+							bufferString(leap), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm,
+							bufferString(leap1), cmonth1[0], (ndayslm1 == 30) ? 'D' : 'X', nstartlm1);
 				} else if ((pmode == 0 && nEncoding != 'a') || pmode == 1) {
 					Number2MonthCH(vmonth.get(moncnt + 1), nstartlm1, ndayslm1, nEncoding, cmonname1Arr);
-					cmonname1 = new String(cmonname1Arr).trim();
+					cmonname1 = bufferString(cmonname1Arr);
 					monthhead = String.format("%s %d%s%s%s%s%s%s%s%s", monnames[month - 1], year, sp, sp,
 							CHtiangan[tiancnt][0],
 							CHdizhi[dicnt][0],
 							CHmiscchar[16][0], cmonname, CHmiscchar[19][0], cmonname1);
 				} else if (pmode == 3) {
 					Number2MonthCH(vmonth.get(moncnt + 1), nstartlm1, ndayslm1, nEncoding, cmonname1Arr);
-					cmonname1 = new String(cmonname1Arr).trim();
+					cmonname1 = bufferString(cmonname1Arr);
 					monthhead = String.format("%s%s%s%s%s%s",
 							CHtiangan[tiancnt][0], CHdizhi[dicnt][0],
 							CHmiscchar[16][0], cmonname, CHmiscchar[19][0], cmonname1);
 				} else if (bSingle) {
 					Number2MonthPS(vmonth.get(moncnt + 1), nstartlm1, ndayslm1, !bSingle, cmonname1Arr); // Uncommented
-					cmonname1 = new String(cmonname1Arr).trim();
+					cmonname1 = bufferString(cmonname1Arr);
 					monthhead = String.format("20 1 SF (%s %d) S\n/fsc 21 def gsave ptc\n" +
 							"%s%s%s%s%s%s%sgrestore",
 							monnames[month - 1], year, PsMonth.PSbigmchar[20][0], PsMonth.PStiangan[tiancnt][0],
@@ -364,10 +379,10 @@ public class Ccal {
 					GetMonthNumber(vmonth.get(moncnt - 1), cmonth, leap);
 					monthhead = String.format("%s %d (Year %s%s, Month %s%d%c)",
 							monnames[month - 1], year, CcalData.tiangan[tiancnt][0], CcalData.dizhi[dicnt][0],
-							new String(leap).trim(), cmonth[0], (ndayslm == 30) ? 'D' : 'X');
+							bufferString(leap), cmonth[0], (ndayslm == 30) ? 'D' : 'X');
 				} else if ((pmode == 0 && nEncoding != 'a') || pmode == 1) {
 					Number2MonthCH(vmonth.get(moncnt - 1), nstartlm, ndayslm, nEncoding, cmonnameArr); // Uncommented
-					cmonname = new String(cmonnameArr).trim();
+					cmonname = bufferString(cmonnameArr);
 					int p = cmonname.indexOf(CHmiscchar[14][0]) + 2 * nCHchars;
 					cmonname = cmonname.substring(0, p);
 					monthhead = String.format("%s %d%s%s%s%s%s%s", monnames[month - 1], year, sp, sp,
@@ -376,7 +391,7 @@ public class Ccal {
 							CHmiscchar[16][0], cmonname);
 				} else if (pmode == 3) {
 					Number2MonthCH(vmonth.get(moncnt - 1), nstartlm, ndayslm, nEncoding, cmonnameArr); // Uncommented
-					cmonname = new String(cmonnameArr).trim();
+					cmonname = bufferString(cmonnameArr);
 					int p = cmonname.indexOf(CHmiscchar[14][0]) + 2 * nCHchars;
 					cmonname = cmonname.substring(0, p);
 					monthhead = String.format("%s%s%s%s",
@@ -385,8 +400,8 @@ public class Ccal {
 							CHmiscchar[16][0], cmonname);
 				} else if (bSingle) {
 					Number2MonthPS(vmonth.get(moncnt - 1), nstartlm, ndayslm, !bSingle, cmonnameArr); // Uncommented
-					cmonname = new String(cmonnameArr).trim();
-					int p = 0; /* cmonname.indexOf(PSbigmchar[14][0]) + 8; */ // Commented out
+					cmonname = bufferString(cmonnameArr);
+					int p = cmonname.indexOf(PsMonth.PSbigmchar[14][0]) + 8;
 					cmonname = cmonname.substring(0, p);
 					monthhead = String.format("20 1 SF (%s %d) S\n/fsc 21 def gsave ptc\n" +
 							"%s%s%s%s%sgrestore",
@@ -398,7 +413,7 @@ public class Ccal {
 				if (pmode == 0 && nEncoding == 'a') {
 					monthhead = String.format("%s %d (Year %s%s, Month %s%d%c S%d)",
 							monnames[month - 1], year, CcalData.tiangan[tiancnt][0], CcalData.dizhi[dicnt][0],
-							new String(leap).trim(), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm);
+							bufferString(leap), cmonth[0], (ndayslm == 30) ? 'D' : 'X', nstartlm);
 				} else if ((pmode == 0 && nEncoding != 'a') || pmode == 1) {
 					monthhead = String.format("%s %d%s%s%s%s%s%s", monnames[month - 1], year, sp, sp,
 							CHtiangan[tiancnt][0],
@@ -420,12 +435,10 @@ public class Ccal {
 		int nmove;
 		if (pmode == 0) {
 			int nHeadLen = monthhead.length();
-			if (nEncoding == 'u') {
-				int nasc = 0;
-				for (int i = 0; i < nHeadLen; i++)
-					if ((byte) (monthhead.charAt(i)) < 0x80)
-						nasc++;
-				nHeadLen = (nHeadLen - nasc) * 2 / 3 + nasc;
+			if (nEncoding != 'a') {
+				for (int i = 0; i < monthhead.length(); i++)
+					if (monthhead.charAt(i) >= 0x80)
+						nHeadLen++;
 			}
 			nmove = (68 - nHeadLen) / 2;
 			if (nmove < 0)
@@ -434,7 +447,7 @@ public class Ccal {
 				System.out.print(" ");
 			System.out.println(monthhead);
 		} else if (pmode == 1) {
-			System.out.println("<tr>\n<th colspan=\"7\" width=\"100%\">");
+			System.out.print("<tr>\n<th colspan=\"7\" width=\"100%\">");
 			System.out.printf("%s</th>\n</tr>\n", monthhead);
 		} else if (pmode == 3) {
 			System.out.printf("<ccal:month value=\"%d\" name=\"%s\" cname=\"%s\">\n",
@@ -469,8 +482,8 @@ public class Ccal {
 		String dayshort;
 		if (pmode == 0) {
 			for (int i = 0; i < 7; i++) {
-				if (nEncoding != 'u')
-					System.out.printf("%s   ", daynamesCH[i][0]); // daynamesCH is String[][]
+				if (nEncoding == 'a')
+					System.out.printf("%-10s", CcalData.daynames[i]);
 				else
 					System.out.printf("%s   ", daynamesCH[i][0]); // daynamesCH is String[][]
 			}
@@ -516,11 +529,12 @@ public class Ccal {
 		final String ANSI_REV = "\u001b[7m";
 		final String ANSI_NORMAL = "\u001b[0m";
 		Calendar today = Calendar.getInstance();
+		boolean highlightToday = !System.getProperty("os.name").startsWith("Windows");
 		char[] cdaynameArr = new char[21];
 		String cdayname = "";
 		for (int w = 0; w < nWeeks; w++) {
 			if (pmode == 1) {
-				System.out.println("<tr align=\"center\">");
+				System.out.println("<tr align=\"right\">");
 			}
 			if (pmode == 3) {
 				System.out.println("<ccal:week>");
@@ -579,12 +593,12 @@ public class Ccal {
 							Number2MonthCH(vmonth.get(mcnt_), 1, 30, nEncoding, cmonnameArr);
 						else
 							Number2MonthCH(lastmon, 1, 30, nEncoding, cmonnameArr);
-						cmonname = new String(cmonnameArr).trim();
+						cmonname = bufferString(cmonnameArr);
 						int p = cmonname.indexOf(CHmiscchar[14][0]) + nCHchars;
 						cmonname = cmonname.substring(0, p);
 					}
 				}
-				if (today.get(Calendar.YEAR) == year && (today.get(Calendar.MONTH) + 1) == month
+				if (highlightToday && today.get(Calendar.YEAR) == year && (today.get(Calendar.MONTH) + 1) == month
 						&& today.get(Calendar.DAY_OF_MONTH) == dcnt) {
 					if (pmode == 0)
 						System.out.print(ANSI_REV);
@@ -593,9 +607,9 @@ public class Ccal {
 					System.out.printf("%2d", dcnt);
 				else if (pmode == 3) {
 					System.out.printf("value=\"%d\" cmonth=\"%d\" leap=\"%s\" cdate=\"%d\" ", dcnt, cmonth[0],
-							new String(leap).trim(), ldcnt);
+							bufferString(leap), ldcnt);
 					Number2DayCH(ldcnt, nEncoding, cdaynameArr);
-					cdayname = new String(cdaynameArr).trim();
+					cdayname = bufferString(cdaynameArr);
 				} else if (bSingle) {
 					int posx = i * 600 + 50;
 					int posy = 1875 - w * 375 + 220;
@@ -636,7 +650,7 @@ public class Ccal {
 							System.out.printf(" [%2d]   ", ldcnt);
 						else {
 							Number2DayCH(ldcnt, nEncoding, cdaynameArr);
-							cdayname = new String(cdaynameArr).trim();
+							cdayname = bufferString(cdaynameArr);
 							System.out.printf(" %s   ", cdayname);
 						}
 					} else if (pmode == 1) {
@@ -645,7 +659,7 @@ public class Ccal {
 						else
 							System.out.print(" ");
 						Number2DayCH(ldcnt, nEncoding, cdaynameArr);
-						cdayname = new String(cdaynameArr).trim();
+						cdayname = bufferString(cdaynameArr);
 						System.out.print(cdayname);
 						if (i == 0 || i == 6)
 							System.out.print("</font>");
@@ -660,23 +674,23 @@ public class Ccal {
 							} else {
 								Number2MonthPS(lastmon, 1, 30, true, cmonnameArr); // Uncommented
 							}
-							cmonname = new String(cmonnameArr).trim();
+							cmonname = bufferString(cmonnameArr);
 							System.out.printf(" %s", cmonname);
 						} else {
 							System.out.print(" ");
 						}
 						Number2DayPS(ldcnt, cdaynameArr); // Uncommented
-						cdayname = new String(cdaynameArr).trim();
-						System.out.printf("%s \n", cdayname);
+						cdayname = bufferString(cdaynameArr);
+						System.out.printf("%s\n", cdayname);
 						if (i == 0 || i == 6)
 							System.out.print("grestore\n");
 						System.out.print("grestore\n");
 					} else if (pmode == 2) {
 						Number2DayPS(ldcnt, cdaynameArr); // Uncommented
-						cdayname = new String(cdaynameArr).trim();
+						cdayname = bufferString(cdaynameArr);
 						if (cdayname.length() > 8)
 							System.out.printf(" grestore -%d 0 rmoveto gsave ptc", ((cdayname.length() - 8) / 4 * 3));
-						System.out.printf(" %s \n", cdayname);
+						System.out.printf(" %s\n", cdayname);
 						if (i == 0 || i == 6)
 							System.out.print("grestore\n");
 						System.out.print("grestore\n");
@@ -687,7 +701,7 @@ public class Ccal {
 							PrintMonthNumber(vmonth.get(moncnt++));
 						else {
 							Number2MonthCH(vmonth.get(moncnt++), 1, 30, nEncoding, cmonnameArr);
-							cmonname = new String(cmonnameArr).trim();
+							cmonname = bufferString(cmonnameArr);
 							int p = cmonname.indexOf(CHmiscchar[14][0]) + nCHchars;
 							cmonname = cmonname.substring(0, p);
 							if (cmonname.length() <= 3 * nCHchars)
@@ -700,7 +714,7 @@ public class Ccal {
 						}
 					} else if (pmode == 1) {
 						Number2DayCH(ldcnt, nEncoding, cdaynameArr);
-						cdayname = new String(cdaynameArr).trim();
+						cdayname = bufferString(cdaynameArr);
 						System.out.printf(" %s", cdayname);
 						if (i == 0 || i == 6)
 							System.out.print("</font>");
@@ -710,8 +724,8 @@ public class Ccal {
 							System.out.print("</td>\n");
 					} else if (pmode == 2) { // This else if is fine
 						Number2DayPS(ldcnt, cdaynameArr); // Uncommented
-						cdayname = new String(cdaynameArr).trim();
-						System.out.printf(" %s \n", cdayname);
+						cdayname = bufferString(cdaynameArr);
+						System.out.printf(" %s\n", cdayname);
 						if (i == 0 || i == 6)
 							System.out.print("grestore\n");
 						System.out.print("grestore\n");
@@ -743,14 +757,14 @@ public class Ccal {
 					} else if (pmode == 2) {
 						if (sameday) {
 							Number2MonthPS(vmonth.get(moncnt++), 1, 30, true, cmonnameArr); // Uncommented
-							cmonname = new String(cmonnameArr).trim();
+							cmonname = bufferString(cmonnameArr);
 							if (!bSingle)
 								System.out.print(" grestore -6 0 rmoveto gsave ptc");
 							if (!bSingle && cmonname.length() > 8) {
 								double fac = 16.0 / (cmonname.length() + 8.0);
 								System.out.printf(" gsave %f 1 scale %s", fac, cmonname);
 							} else
-								System.out.printf(" %s ", cmonname);
+								System.out.printf(" %s", cmonname);
 						} else
 							System.out.print(" ");
 						System.out.printf("%s\n", PsMonth.PSjieqi[termcnt++][0]); // Corrected usage
@@ -766,7 +780,7 @@ public class Ccal {
 							PrintMonthNumber(vmonth.get(moncnt++));
 						else {
 							Number2MonthCH(vmonth.get(moncnt++), 1, 30, nEncoding, cmonnameArr);
-							cmonname = new String(cmonnameArr).trim();
+							cmonname = bufferString(cmonnameArr);
 							int p = cmonname.indexOf(CHmiscchar[14][0]) + nCHchars;
 							cmonname = cmonname.substring(0, p);
 							if (cmonname.length() <= 3 * nCHchars)
@@ -779,7 +793,7 @@ public class Ccal {
 						}
 					} else if (pmode == 1 || pmode == 3) {
 						Number2MonthCH(vmonth.get(moncnt++), 1, 30, nEncoding, cmonnameArr);
-						cmonname = new String(cmonnameArr).trim();
+						cmonname = bufferString(cmonnameArr);
 						int p = cmonname.indexOf(CHmiscchar[14][0]) + nCHchars;
 						cmonname = cmonname.substring(0, p);
 						if (pmode == 1) {
@@ -793,17 +807,17 @@ public class Ccal {
 						}
 					} else if (pmode == 2 && bSingle) {
 						Number2MonthPS(vmonth.get(moncnt++), 1, 30, true, cmonnameArr); // Uncommented
-						cmonname = new String(cmonnameArr).trim();
-						System.out.printf(" %s \n", cmonname);
+						cmonname = bufferString(cmonnameArr);
+						System.out.printf(" %s\n", cmonname);
 						if (i == 0 || i == 6)
 							System.out.print("grestore\n");
 						System.out.print("grestore\n");
 					} else if (pmode == 2) { // This else if is fine
 						Number2MonthPS(vmonth.get(moncnt++), 1, 30, true, cmonnameArr); // Uncommented
-						cmonname = new String(cmonnameArr).trim();
+						cmonname = bufferString(cmonnameArr);
 						if (cmonname.length() > 8)
-							System.out.printf(" grestore -%d 0 rmoveto gsave ptc", ((cmonname.length() - 7) / 4 * 3));
-						System.out.printf(" %s \n", cmonname);
+							System.out.printf(" grestore -%d 0 rmoveto gsave ptc", ((cmonname.length() - 8) / 4 * 3));
+						System.out.printf(" %s\n", cmonname);
 						if (i == 0 || i == 6)
 							System.out.print("grestore\n");
 						System.out.print("grestore\n");
@@ -811,7 +825,7 @@ public class Ccal {
 				}
 				if (pmode == 3)
 					System.out.printf("cmonthname=\"%s\" cdatename=\"%s\" />\n", cmonname, cdayname);
-				if (today.get(Calendar.YEAR) == year && (today.get(Calendar.MONTH) + 1) == month
+				if (highlightToday && today.get(Calendar.YEAR) == year && (today.get(Calendar.MONTH) + 1) == month
 						&& today.get(Calendar.DAY_OF_MONTH) == dcnt) {
 					if (pmode == 0)
 						System.out.print(ANSI_NORMAL);

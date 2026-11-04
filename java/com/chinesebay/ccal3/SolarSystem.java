@@ -1,6 +1,6 @@
 package com.chinesebay.ccal3;
 
-import static com.chinesebay.ccal2.NovasConstants.*;
+import static com.chinesebay.ccal3.NovasConstants.*;
 
 import java.util.Arrays;
 

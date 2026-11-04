@@ -1,8 +1,8 @@
 package com.chinesebay.ccal3;
 
-import static com.chinesebay.ccal2.NovasConstants.ASEC2RAD;
-import static com.chinesebay.ccal2.NovasConstants.T0;
-import static com.chinesebay.ccal2.NovasConstants.TWOPI;
+import static com.chinesebay.ccal3.NovasConstants.ASEC2RAD;
+import static com.chinesebay.ccal3.NovasConstants.T0;
+import static com.chinesebay.ccal3.NovasConstants.TWOPI;
 
 /**
  * Computes nutation models.

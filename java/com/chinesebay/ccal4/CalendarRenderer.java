@@ -31,44 +31,50 @@ final class CalendarRenderer {
         for (int month = first; month <= last; month++) {
             MonthModel model = new MonthModel(options.year, month, data, text);
             String heading = options.encoding == 'a' ? model.asciiHeader() : model.chineseHeader();
-            int width = visualWidth(heading);
-            appendSpaces(result, Math.max(0, (68 - width) / 2));
+            appendSpaces(result, Math.max(0, (68 - visualWidth(heading)) / 2));
             result.append(heading).append('\n');
             if (options.encoding == 'a') {
-                for (String name : ChineseText.DAY_NAMES) {
+                for (String name : ChineseText.DAY_NAMES)
                     result.append(padRight(name, 10));
-                }
             } else {
-                String[] days = {"Sun 日", "Mon 一", "Tue 二", "Wed 三", "Thu 四", "Fri 五", "Sat 六"};
-                for (String day : days) {
-                    result.append(padRight(day, 10));
-                }
+                String[] days = {"Sun  \u65e5", "Mon  \u4e00", "Tue  \u4e8c", "Wed  \u4e09",
+                        "Thu  \u56db", "Fri  \u4e94", "Sat  \u516d"};
+                for (String day : days)
+                    result.append(day).append("   ");
             }
             result.append('\n');
 
             int firstDayOfWeek = CalendarMath.dayOfWeek(options.year, month, 1);
             int days = CalendarMath.daysInMonth(options.year, month);
             int day = 1;
+            Double deferredMonth = null;
             int weeks = weekCount(firstDayOfWeek, days);
             for (int week = 0; week < weeks; week++) {
                 for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
                     if (week == 0 && dayOfWeek < firstDayOfWeek) {
                         result.append("          ");
                     } else if (day > days) {
-                        // The original character renderer finishes the last
-                        // physical line rather than padding it to seven cells.
                         break;
                     } else {
-                        DayModel dayModel = model.day(day++);
-                        String cell = options.encoding == 'a'
-                                ? asciiCell(dayModel)
-                                : chineseCell(dayModel, text);
-                        if (today.getYear() == options.year && today.getMonthValue() == month
-                                && today.getDayOfMonth() == dayModel.gregorianDay) {
-                            result.append("\u001B[7m").append(cell).append("\u001B[0m");
-                        } else {
-                            result.append(cell);
+                        DayModel actual = model.day(day++);
+                        DayModel displayed = actual;
+                        if (deferredMonth != null) {
+                            // Character output moves a month marker one day when
+                            // the new moon and solar term occupy the same cell.
+                            displayed = new DayModel(actual.gregorianDay, deferredMonth,
+                                    actual.lunarDay, -1, true);
+                            deferredMonth = null;
+                        } else if (actual.newLunarMonth && actual.solarTermIndex >= 0) {
+                            deferredMonth = actual.lunarMonth;
                         }
+                        String cell = options.encoding == 'a' ? asciiCell(displayed) : chineseCell(displayed, text);
+                        boolean highlight = !System.getProperty("os.name").startsWith("Windows")
+                                && today.getYear() == options.year && today.getMonthValue() == month
+                                && today.getDayOfMonth() == actual.gregorianDay;
+                        if (highlight)
+                            result.append("\u001B[7m").append(cell).append("\u001B[0m");
+                        else
+                            result.append(cell);
                     }
                 }
                 result.append('\n');
@@ -91,50 +97,64 @@ final class CalendarRenderer {
     }
 
     private static String chineseCell(DayModel day, ChineseText text) {
-        String label = day.solarTermIndex >= 0 ? text.solarTerm(day.solarTermIndex)
-                : day.newLunarMonth ? text.lunarMonthShort(day.lunarMonth)
-                : text.lunarDay(day.lunarDay);
-        return padRight(padLeft(Integer.toString(day.gregorianDay), 2) + " " + label, 10);
+        String number = padLeft(Integer.toString(day.gregorianDay), 2);
+        if (day.solarTermIndex >= 0)
+            return number + " " + text.solarTerm(day.solarTermIndex) + "   ";
+        if (!day.newLunarMonth)
+            return number + " " + text.lunarDay(day.lunarDay) + "   ";
+        String name = text.lunarMonthShort(day.lunarMonth);
+        return number + (name.length() <= 3 ? " " : "") + name
+                + (name.length() == 2 ? "   " : name.length() == 3 ? " " : "");
     }
 
     private static String renderHtml(CliOptions options, LunarYearData data, ChineseText text) {
         String charset = options.encoding == 'u' ? "utf-8" : options.encoding == 'b' ? "big5" : "gb2312";
-        StringBuilder result = new StringBuilder();
-        result.append("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html; charset=")
+        StringBuilder result = new StringBuilder("<html>\n<head>\n");
+        result.append("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=")
                 .append(charset).append("\">\n")
-                .append("<meta name=\"GENERATOR\" content=\"ccal-2.5.3 Java port\">\n")
-                .append("<link rel=\"stylesheet\" href=\"ccal.css\">\n")
+                .append("<meta name=\"GENERATOR\" content=\"ccal-2.5.3 by Zhuo Meng, http://thunder.cwru.edu/ccal/\">\n")
                 .append("<title>Chinese Calendar for ");
-        if (options.singleMonth) {
+        if (options.singleMonth)
             result.append(ChineseText.MONTH_NAMES[options.month - 1]).append(' ').append(options.year);
-        } else {
+        else
             result.append("Year ").append(options.year);
-        }
+        result.append(" / ").append(options.year).append(text.year());
+        if (options.singleMonth)
+            result.append(options.month).append(text.month());
         result.append("</title>\n</head>\n<body>\n<center>\n")
-                .append("<table class=\"ccal-calendar\">\n");
+                .append("<table border=\"1\" cellspacing=\"1\" width=\"90%\">\n");
         int first = options.singleMonth ? options.month : 1;
         int last = options.singleMonth ? options.month : 12;
+        String[] weekdays = {"\u65e5", "\u4e00", "\u4e8c", "\u4e09", "\u56db", "\u4e94", "\u516d"};
         for (int month = first; month <= last; month++) {
             MonthModel model = new MonthModel(options.year, month, data, text);
-            result.append("<tr class=\"ccal-month-heading\">\n<th colspan=\"7\">")
-                    .append(escapeHtml(model.chineseHeader())).append("</th>\n</tr>\n");
-            result.append("<tr class=\"ccal-weekdays\">\n");
+            result.append("<tr>\n<th colspan=\"7\" width=\"100%\">")
+                    .append(ChineseText.MONTH_NAMES[month - 1]).append(' ').append(options.year)
+                    .append("&#160;&#160;").append(escapeHtml(model.chineseHeaderWithoutGregorian()))
+                    .append("</th>\n</tr>\n<tr align=\"center\">\n");
             for (int day = 0; day < 7; day++) {
-                String shortName = ChineseText.DAY_NAMES[day].substring(0, 3);
-                String value = shortName + " " + new String[] {"日", "一", "二", "三", "四", "五", "六"}[day];
-                if (day == 0) {
-                    result.append("<th scope=\"col\" class=\"ccal-sunday\">").append(value).append("</th>\n");
-                } else if (day == 6) {
-                    result.append("<th scope=\"col\" class=\"ccal-saturday\">").append(value).append("</th>\n");
-                } else {
-                    result.append("<th scope=\"col\">").append(value).append("</th>\n");
-                }
+                appendHtmlCellOpen(result, day);
+                result.append(ChineseText.DAY_NAMES[day].substring(0, 3)).append(' ').append(weekdays[day]);
+                appendHtmlFontClose(result, day);
+                result.append("</td>\n");
             }
             result.append("</tr>\n");
             appendHtmlWeeks(result, options.year, month, model, text);
         }
-        result.append("</table>\n</center>\n</body>\n</html>\n");
-        return result.toString();
+        return result.append("</table>\n</center>\n</body>\n</html>\n").toString();
+    }
+
+    private static void appendHtmlCellOpen(StringBuilder result, int weekday) {
+        result.append("<td width=\"").append(weekday == 0 || weekday == 6 ? 15 : 14).append("%\">");
+        if (weekday == 0)
+            result.append("<font color=\"#FF0000\">");
+        else if (weekday == 6)
+            result.append("<font color=\"#00E600\">");
+    }
+
+    private static void appendHtmlFontClose(StringBuilder result, int weekday) {
+        if (weekday == 0 || weekday == 6)
+            result.append("</font>");
     }
 
     private static void appendHtmlWeeks(StringBuilder result, int year, int month, MonthModel model,
@@ -144,20 +164,37 @@ final class CalendarRenderer {
         int day = 1;
         int weeks = weekCount(firstDayOfWeek, days);
         for (int week = 0; week < weeks; week++) {
-            result.append("<tr>\n");
-            for (int dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
-                String open = dayOfWeek == 0 ? "<td class=\"ccal-sunday\">"
-                        : dayOfWeek == 6 ? "<td class=\"ccal-saturday\">" : "<td>";
-                result.append(open);
-                if ((week == 0 && dayOfWeek < firstDayOfWeek) || day > days) {
+            result.append("<tr align=\"right\">\n");
+            for (int weekday = 0; weekday < 7; weekday++) {
+                appendHtmlCellOpen(result, weekday);
+                if ((week == 0 && weekday < firstDayOfWeek) || day > days) {
                     result.append("&#160;");
-                } else {
-                    DayModel dayModel = model.day(day++);
-                    String label = dayModel.solarTermIndex >= 0 ? text.solarTerm(dayModel.solarTermIndex)
-                            : dayModel.newLunarMonth ? text.lunarMonthShort(dayModel.lunarMonth)
-                            : text.lunarDay(dayModel.lunarDay);
-                    result.append(dayModel.gregorianDay).append(' ').append(escapeHtml(label));
+                    appendHtmlFontClose(result, weekday);
+                    result.append("</td>\n");
+                    continue;
                 }
+                DayModel value = model.day(day++);
+                result.append(padLeft(Integer.toString(value.gregorianDay), 2)).append(' ');
+                String label;
+                boolean padding;
+                if (value.solarTermIndex >= 0) {
+                    if (value.newLunarMonth)
+                        result.append(text.lunarMonthShort(value.lunarMonth));
+                    label = text.solarTerm(value.solarTermIndex);
+                    padding = !value.newLunarMonth;
+                } else if (value.newLunarMonth) {
+                    label = text.lunarMonthShort(value.lunarMonth);
+                    padding = label.length() == 2;
+                } else {
+                    if (value.gregorianDay == 1)
+                        result.append(text.lunarMonthShort(value.lunarMonth));
+                    label = text.lunarDay(value.lunarDay);
+                    padding = value.gregorianDay != 1;
+                }
+                result.append(escapeHtml(label));
+                appendHtmlFontClose(result, weekday);
+                if (padding)
+                    result.append("&#160;&#160;");
                 result.append("</td>\n");
             }
             result.append("</tr>\n");
@@ -242,24 +279,30 @@ final class CalendarRenderer {
 
         String asciiHeader() {
             HeaderMonth first = headerMonth();
-            int headerYear = month == 1 && first.number != 1 ? year - 1 : year;
+            boolean previousYear = month == 1 && first.number != 1;
             StringBuilder result = new StringBuilder();
             result.append(ChineseText.MONTH_NAMES[month - 1]).append(' ').append(year)
-                    .append(" (Year ").append(text.romanStemBranch(headerYear)).append(", Month ")
-                    .append(first.number);
-            if (first.leap) {
-                result.append('R');
-            }
-            result.append(first.days == 30 ? 'D' : 'X').append(" S").append(first.startDay);
+                    .append(" (Year ").append(text.romanStemBranch(previousYear ? year - 1 : year))
+                    .append(", Month ");
+            appendAsciiHeaderMonth(result, first);
+            if (!noNewMoon())
+                result.append(" S").append(first.startDay);
             HeaderMonth second = secondHeaderMonth(first.index);
             if (second != null) {
-                result.append(", ").append(second.number);
-                if (second.leap) {
-                    result.append('R');
-                }
-                result.append(second.days == 30 ? 'D' : 'X').append(" S").append(second.startDay);
+                if (previousYear)
+                    result.append(", Year ").append(text.romanStemBranch(year)).append(", Month ");
+                else
+                    result.append(", ");
+                appendAsciiHeaderMonth(result, second);
+                result.append(" S").append(second.startDay);
             }
             return result.append(')').toString();
+        }
+
+        private void appendAsciiHeaderMonth(StringBuilder result, HeaderMonth value) {
+            if (value.leap)
+                result.append('R');
+            result.append(value.number).append(value.days == 30 ? 'D' : 'X');
         }
 
         String chineseHeader() {
@@ -269,15 +312,28 @@ final class CalendarRenderer {
 
         String chineseHeaderWithoutGregorian() {
             HeaderMonth first = headerMonth();
-            int headerYear = month == 1 && first.number != 1 ? year - 1 : year;
+            boolean previousYear = month == 1 && first.number != 1;
             StringBuilder result = new StringBuilder();
-            result.append(text.stemBranch(headerYear)).append(text.year())
-                    .append(text.lunarMonth(first.value, first.startDay, first.days));
+            result.append(text.stemBranch(previousYear ? year - 1 : year)).append(text.year());
+            if (noNewMoon()) {
+                result.append(text.lunarMonthShort(first.value))
+                        .append(first.days == 30 ? text.big() : text.small());
+            } else {
+                result.append(text.lunarMonth(first.value, first.startDay, first.days));
+            }
             HeaderMonth second = secondHeaderMonth(first.index);
             if (second != null) {
-                result.append('，').append(text.lunarMonth(second.value, second.startDay, second.days));
+                result.append('\uff0c');
+                if (previousYear)
+                    result.append(text.stemBranch(year)).append(text.year());
+                result.append(text.lunarMonth(second.value, second.startDay, second.days));
             }
             return result.toString();
+        }
+
+        private boolean noNewMoon() {
+            int index = firstMoonIndexOnOrAfter(firstJulianDay);
+            return index >= data.newMoons.length || data.newMoons[index] >= nextJulianDay;
         }
 
         private HeaderMonth headerMonth() {
