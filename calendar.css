@@ -14,7 +14,7 @@ body { margin: 0; background: #eee; color: #000; }
 }
 .year {
   margin: 0 0 4mm;
-  font: bold 28pt/1 "Times New Roman", "Nimbus Roman", serif;
+  font: bold 36pt/1 "Times New Roman", "Nimbus Roman", serif;
   text-align: center;
 }
 .calendar {
@@ -37,7 +37,7 @@ body { margin: 0; background: #eee; color: #000; }
   inset: 6mm 0 auto;
   z-index: -1;
   color: #ffe6ff;
-  font: bold 100pt/1 "Times New Roman", "Nimbus Roman", serif;
+  font: bold 110pt/1 "Times New Roman", "Nimbus Roman", serif;
   text-align: center;
   pointer-events: none;
 }
@@ -45,14 +45,14 @@ body { margin: 0; background: #eee; color: #000; }
 .month th, .month td { border: 0; padding: 0; text-align: center; font-weight: normal; }
 .month th {
   height: 5mm;
-  font: 5pt/1 "SimSun", "Songti SC", "Noto Serif CJK SC", serif;
+  font: 8pt/1 "SimSun", "Songti SC", "Noto Serif CJK SC", serif;
 }
 .month td { height: 8mm; vertical-align: top; }
-.day { display: block; font-size: 9pt; line-height: 1; }
+.day { display: block; font-size: 11pt; line-height: 1; }
 .lunar {
   display: block;
   white-space: nowrap;
-  font: 4.6pt/1.15 "SimSun", "Songti SC", "Noto Serif CJK SC", serif;
+  font: 6pt/1 "SimSun", "Songti SC", "Noto Serif CJK SC", serif;
 }
 .month tr > :first-child { color: #ff0000; }
 .month tr > :last-child { color: #00cc00; }
